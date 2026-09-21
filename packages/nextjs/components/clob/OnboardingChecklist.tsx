@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount, useWriteContract } from "wagmi";
+import { WalletGate } from "./WalletGate";
+import { useWriteContract } from "wagmi";
 import { CheckCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
 import { useOnboarding } from "~~/hooks/clob/useOnboarding";
@@ -76,6 +77,7 @@ const StepRow = ({
           address: step.tokenEvmAddress,
           abi: IHRC_ABI,
           functionName: "associate",
+          chainId: config.chainId,
           gas: GAS_LIMITS.ASSOCIATE,
         });
       } else if (step.kind === "approvePermit2") {
@@ -84,6 +86,7 @@ const StepRow = ({
           abi: ERC20_APPROVE_ABI,
           functionName: "approve",
           args: [config.permit2, parseDecimal(approvalAmount, decimals)],
+          chainId: config.chainId,
           gas: GAS_LIMITS.APPROVE_PERMIT2,
         });
       } else {
@@ -93,6 +96,7 @@ const StepRow = ({
           abi: PERMIT2_APPROVE_ABI,
           functionName: "approve",
           args: [step.tokenEvmAddress, config.reactor, parseDecimal(approvalAmount, decimals), expiration],
+          chainId: config.chainId,
           gas: GAS_LIMITS.PERMIT2_APPROVE_REACTOR,
         });
       }
@@ -155,20 +159,8 @@ const StepRow = ({
  * verified source, which settles through Permit2.
  */
 export const OnboardingChecklist = ({ market }: { market: Orderbook }) => {
-  const { isConnected } = useAccount();
   const { data: onboarding, refetch, isLoading } = useOnboarding(market);
   const [approvalAmount, setApprovalAmount] = useState("1000");
-
-  if (!isConnected) {
-    return (
-      <div className="rounded-box bg-base-100 p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide opacity-70">Ready to trade</h2>
-        <p className="mt-2 text-sm opacity-70">
-          Connect a wallet to see what this account still needs before it can place an order here.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="rounded-box bg-base-100 p-4">
@@ -177,52 +169,56 @@ export const OnboardingChecklist = ({ market }: { market: Orderbook }) => {
         {onboarding?.complete && <span className="badge badge-success badge-sm">ready</span>}
       </div>
 
-      {isLoading && <p className="mt-3 text-sm opacity-60">Checking the chain…</p>}
+      <div className="mt-3">
+        <WalletGate action="see what this account still needs">
+          <>
+            {isLoading && <p className="text-sm opacity-60">Checking the chain…</p>}
 
-      {onboarding && (
-        <>
-          {!onboarding.complete && (
-            <div className="mt-3 flex items-start gap-2 rounded-box bg-base-200 p-3 text-xs">
-              <ExclamationTriangleIcon className="mt-0.5 h-4 w-4 shrink-0 opacity-70" />
-              <p>
-                Settlement pulls your funds through <span className="font-medium">Permit2</span>, so each token needs an
-                allowance to Permit2 and then a capped, expiring allowance from Permit2 to the settlement contract.
-                SaucerSwap&apos;s documentation does not mention this — the steps were read from the reactor contract.
-              </p>
-            </div>
-          )}
+            {onboarding && !onboarding.complete && (
+              <div className="mt-3 flex items-start gap-2 rounded-box bg-base-200 p-3 text-xs">
+                <ExclamationTriangleIcon className="mt-0.5 h-4 w-4 shrink-0 opacity-70" />
+                <p>
+                  Settlement pulls your funds through <span className="font-medium">Permit2</span>, so each token needs
+                  an allowance to Permit2 and then a capped, expiring allowance from Permit2 to the settlement contract.
+                  SaucerSwap&apos;s documentation does not mention this — the steps were read from the reactor contract.
+                </p>
+              </div>
+            )}
 
-          <ul className="mt-2">
-            {onboarding.steps.map(step => (
-              <StepRow
-                key={step.id}
-                step={step}
-                market={market}
-                approvalAmount={approvalAmount}
-                onDone={() => refetch()}
-              />
-            ))}
-          </ul>
+            {onboarding && (
+              <ul className="mt-2">
+                {onboarding.steps.map(step => (
+                  <StepRow
+                    key={step.id}
+                    step={step}
+                    market={market}
+                    approvalAmount={approvalAmount}
+                    onDone={() => refetch()}
+                  />
+                ))}
+              </ul>
+            )}
 
-          {!onboarding.complete && (
-            <label className="mt-3 flex items-center gap-2 text-xs">
-              <span className="opacity-70">Approve up to</span>
-              <input
-                className="input input-xs input-bordered w-28 font-mono"
-                value={approvalAmount}
-                onChange={event => setApprovalAmount(event.target.value.replace(/[^\d.]/g, ""))}
-                inputMode="decimal"
-              />
-              <span className="opacity-70">tokens, expiring in {APPROVAL_DAYS} days</span>
-            </label>
-          )}
+            {onboarding && !onboarding.complete && (
+              <label className="mt-3 flex items-center gap-2 text-xs">
+                <span className="opacity-70">Approve up to</span>
+                <input
+                  className="input input-xs input-bordered w-28 font-mono"
+                  value={approvalAmount}
+                  onChange={event => setApprovalAmount(event.target.value.replace(/[^\d.]/g, ""))}
+                  inputMode="decimal"
+                />
+                <span className="opacity-70">tokens, expiring in {APPROVAL_DAYS} days</span>
+              </label>
+            )}
 
-          <p className="mt-3 text-xs opacity-60">
-            Every box is checked against the mirror node and the contracts themselves, not against the venue&apos;s view
-            of your account.
-          </p>
-        </>
-      )}
+            <p className="mt-3 text-xs opacity-60">
+              Every box is checked against the mirror node and the contracts themselves, not against the venue&apos;s
+              view of your account.
+            </p>
+          </>
+        </WalletGate>
+      </div>
     </div>
   );
 };

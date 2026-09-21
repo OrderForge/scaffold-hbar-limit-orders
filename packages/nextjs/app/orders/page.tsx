@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useAccount } from "wagmi";
 import { FillChecks } from "~~/components/clob/FillChecks";
 import { SignInButton } from "~~/components/clob/SignInButton";
+import { WalletGate } from "~~/components/clob/WalletGate";
 import { useOrderHistory, useOrders } from "~~/hooks/clob/useAccountData";
 import { useClobAuth } from "~~/hooks/clob/useClobAuth";
 import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
@@ -123,7 +123,6 @@ const OrderRow = ({ order, onOpen }: { order: AccountOrder; onOpen: (order: Acco
 );
 
 const OrdersPage = () => {
-  const { isConnected } = useAccount();
   const { isSignedIn } = useClobAuth();
   const { data: orders, isLoading, error } = useOrders();
   const [openOrder, setOpenOrder] = useState<AccountOrder | null>(null);
@@ -143,18 +142,11 @@ const OrdersPage = () => {
         <SignInButton />
       </div>
 
-      {!isConnected && (
-        <p className="mt-12 rounded-box bg-base-200 p-8 text-center text-sm opacity-70">
-          Connect a wallet to see your orders.
-        </p>
-      )}
-
-      {isConnected && !isSignedIn && (
-        <div className="mt-12 rounded-box bg-base-200 p-8 text-center">
-          <p className="text-sm opacity-80">
-            Sign in to read this account&apos;s orders. Signing the challenge proves you control the account; it moves
-            nothing and costs nothing.
-          </p>
+      {!isSignedIn && (
+        <div className="mt-12 rounded-box bg-base-200 p-8">
+          <WalletGate needsSignIn action="see your orders">
+            <span />
+          </WalletGate>
         </div>
       )}
 

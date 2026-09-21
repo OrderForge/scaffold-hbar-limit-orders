@@ -8,12 +8,14 @@ const LABELS: Record<ClobNetwork, string> = { testnet: "Testnet", mainnet: "Main
 /**
  * Switches which network the **market data** is read from.
  *
- * Both networks serve public market data without a key, and testnet markets are often
- * closed or halted. Rather than showing an empty terminal, the reader can look at mainnet.
- * This never touches funds: wallet actions still run on the wallet's own network.
+ * With no wallet connected this is free: both networks serve public data, and testnet
+ * markets are often closed or halted, so being able to look at mainnet keeps the terminal
+ * useful. Once a wallet is connected the two are kept in step — the toggle follows the
+ * wallet, and deliberately reading the other network marks everything wallet-related
+ * read-only rather than letting someone approve a token on the chain they are not viewing.
  */
 export const NetworkToggle = () => {
-  const { network, setNetwork, isReadOnlyNetwork } = useClobNetwork();
+  const { network, setNetwork, isReadOnlyNetwork, walletNetwork } = useClobNetwork();
 
   return (
     <div className="flex items-center gap-2">
@@ -33,9 +35,14 @@ export const NetworkToggle = () => {
       {isReadOnlyNetwork && (
         <span
           className="badge badge-sm badge-warning"
-          title="Market data only. Trading stays on your wallet's network."
+          title={`Your wallet is on ${walletNetwork}. Trading is disabled while you read a different network.`}
         >
           read-only
+        </span>
+      )}
+      {!isReadOnlyNetwork && walletNetwork === network && (
+        <span className="badge badge-sm badge-ghost" title="Your wallet is on the network you are reading">
+          wallet
         </span>
       )}
     </div>

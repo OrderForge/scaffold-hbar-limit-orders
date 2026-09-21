@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { WalletGate } from "./WalletGate";
 import { useAccount, useSignTypedData } from "wagmi";
 import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
 import { useHederaAccount } from "~~/hooks/clob/useOnboarding";
@@ -52,7 +53,7 @@ const ORDER_TYPES = {
  * can never be mistaken for a live order.
  */
 export const DryRunSign = ({ market }: { market: Orderbook }) => {
-  const { address, isConnected } = useAccount();
+  const { address } = useAccount();
   const { config, client } = useClobNetwork();
   const { data: hederaAccount } = useHederaAccount();
   const { signTypedDataAsync } = useSignTypedData();
@@ -173,81 +174,78 @@ export const DryRunSign = ({ market }: { market: Orderbook }) => {
         Signs an order in your wallet and writes it to the HCS journal. Nothing is sent to SaucerSwap.
       </p>
 
-      <div className="mt-3 flex flex-wrap items-end gap-2">
-        <div className="join">
-          {(["BUY", "SELL"] as const).map(option => (
-            <button
-              key={option}
-              type="button"
-              className={`btn btn-xs join-item ${side === option ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => setSide(option)}
-            >
-              {option}
+      <WalletGate action="sign an intent">
+        <>
+          <div className="mt-3 flex flex-wrap items-end gap-2">
+            <div className="join">
+              {(["BUY", "SELL"] as const).map(option => (
+                <button
+                  key={option}
+                  type="button"
+                  className={`btn btn-xs join-item ${side === option ? "btn-primary" : "btn-ghost"}`}
+                  onClick={() => setSide(option)}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+            <label className="text-xs">
+              <span className="opacity-60">Price</span>
+              <input
+                className="input input-xs input-bordered ml-1 w-28 font-mono"
+                value={price}
+                onChange={event => setPrice(event.target.value.replace(/[^\d.]/g, ""))}
+                inputMode="decimal"
+              />
+            </label>
+            <label className="text-xs">
+              <span className="opacity-60">Size</span>
+              <input
+                className="input input-xs input-bordered ml-1 w-28 font-mono"
+                value={size}
+                onChange={event => setSize(event.target.value.replace(/[^\d.]/g, ""))}
+                inputMode="decimal"
+              />
+            </label>
+            <button type="button" className="btn btn-primary btn-xs" disabled={busy || !validation.ok} onClick={run}>
+              {busy ? "signing…" : "Sign intent"}
             </button>
-          ))}
-        </div>
-        <label className="text-xs">
-          <span className="opacity-60">Price</span>
-          <input
-            className="input input-xs input-bordered ml-1 w-28 font-mono"
-            value={price}
-            onChange={event => setPrice(event.target.value.replace(/[^\d.]/g, ""))}
-            inputMode="decimal"
-          />
-        </label>
-        <label className="text-xs">
-          <span className="opacity-60">Size</span>
-          <input
-            className="input input-xs input-bordered ml-1 w-28 font-mono"
-            value={size}
-            onChange={event => setSize(event.target.value.replace(/[^\d.]/g, ""))}
-            inputMode="decimal"
-          />
-        </label>
-        <button
-          type="button"
-          className="btn btn-primary btn-xs"
-          disabled={!isConnected || busy || !validation.ok}
-          onClick={run}
-        >
-          {busy ? "signing…" : "Sign intent"}
-        </button>
-      </div>
+          </div>
 
-      {!validation.ok && (
-        // Validation runs before any signature is requested, and names the rule that failed.
-        <p className="mt-2 text-xs text-warning">{validation.message}</p>
-      )}
+          {!validation.ok && (
+            // Validation runs before any signature is requested, and names the rule that failed.
+            <p className="mt-2 text-xs text-warning">{validation.message}</p>
+          )}
 
-      {validation.ok && (
-        <p className="mt-2 font-mono text-xs opacity-60">
-          notional {notional(price, size, market.baseTokenDecimals, market.quoteTokenDecimals)}{" "}
-          {market.quoteTokenSymbol}
-        </p>
-      )}
+          {validation.ok && (
+            <p className="mt-2 font-mono text-xs opacity-60">
+              notional {notional(price, size, market.baseTokenDecimals, market.quoteTokenDecimals)}{" "}
+              {market.quoteTokenSymbol}
+            </p>
+          )}
 
-      {!tradeable && (
-        <p className="mt-2 text-xs opacity-60">
-          This market is not accepting orders right now, so a real order could not be submitted even if signed.
-        </p>
-      )}
+          {!tradeable && (
+            <p className="mt-2 text-xs opacity-60">
+              This market is not accepting orders right now, so a real order could not be submitted even if signed.
+            </p>
+          )}
 
-      {!isConnected && <p className="mt-2 text-xs opacity-60">Connect a wallet to sign.</p>}
+          {result && (
+            <p className="mt-2 text-xs">
+              Recorded as message #{result.sequenceNumber} on{" "}
+              <a className="link" href={links.topic(result.topicId)} target="_blank" rel="noreferrer">
+                topic {result.topicId}
+              </a>{" "}
+              ·{" "}
+              <Link className="link" href="/journal">
+                open the journal
+              </Link>
+            </p>
+          )}
 
-      {result && (
-        <p className="mt-2 text-xs">
-          Recorded as message #{result.sequenceNumber} on{" "}
-          <a className="link" href={links.topic(result.topicId)} target="_blank" rel="noreferrer">
-            topic {result.topicId}
-          </a>{" "}
-          ·{" "}
-          <Link className="link" href="/journal">
-            open the journal
-          </Link>
-        </p>
-      )}
-
-      {error && <p className="mt-2 text-xs text-error">{error}</p>}
+          {error && <p className="mt-2 text-xs text-error">{error}</p>}
+        </>
+      </WalletGate>
     </div>
   );
 };

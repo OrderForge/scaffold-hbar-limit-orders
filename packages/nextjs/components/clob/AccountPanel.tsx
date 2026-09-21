@@ -1,6 +1,7 @@
 "use client";
 
 import { SignInButton } from "./SignInButton";
+import { WalletGate } from "./WalletGate";
 import { useFees, useVenueOnboarding } from "~~/hooks/clob/useAccountData";
 import { useClobAuth } from "~~/hooks/clob/useClobAuth";
 import { useOnboarding } from "~~/hooks/clob/useOnboarding";
@@ -25,12 +26,11 @@ export const AccountPanel = ({ market }: { market: Orderbook }) => {
     return (
       <div className="rounded-box bg-base-100 p-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide opacity-70">Your account</h2>
-        <p className="mt-2 text-xs opacity-70">
-          Sign in to read this account&apos;s fee rates and the venue&apos;s view of your onboarding. Signing proves you
-          control the account; it moves nothing.
-        </p>
         <div className="mt-3">
-          <SignInButton />
+          {/* Same connect → right chain → sign in sequence as every other panel. */}
+          <WalletGate needsSignIn action="read your fee rates and the venue's view of your onboarding">
+            <span />
+          </WalletGate>
         </div>
       </div>
     );
