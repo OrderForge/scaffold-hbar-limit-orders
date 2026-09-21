@@ -1,0 +1,25 @@
+{
+  "orders": [
+    {
+      "info": {
+        "reactor": "0x5707B946EE64bD750A587261Ce36ec7024F3088B",
+        "swapper": "0x610041680b053425c3b0fa76e856d6f534f27418",
+        "nonce": "1",
+        "deadline": "1789832420",
+        "additionalValidationContract": "0xd1a45eba17b05cc62b11e2b62b8a00651a79014c",
+        "additionalValidationData": "0x"
+      },
+      "input": { "token": "0x0000000000000000000000000000000000120f46", "amount": "10000000" },
+      "output": {
+        "token": "0x0000000000000000000000000000000000001549",
+        "amount": "10000000",
+        "recipient": "0x610041680b053425c3b0fa76e856d6f534f27418"
+      },
+      "makerOnly": true,
+      "takerOnce": false,
+      "maxTakerFeePips": 2000,
+      "maxMakerFeePips": 2000,
+      "meta": { "isAMMEnabled": false }
+    }
+  ]
+}

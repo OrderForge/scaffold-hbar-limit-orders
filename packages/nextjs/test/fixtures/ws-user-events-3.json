@@ -1,0 +1,29 @@
+{
+  "_note": "/ws/user-events?books=3 during place+cancel, testnet 2026-09-19",
+  "messages": [
+    {
+      "type": "ORDER_CREATED",
+      "orderbookId": "3",
+      "orderId": "3494124",
+      "swapper": "0x610041680b053425c3b0fa76e856d6f534f27418",
+      "timestamp": 1789835133977,
+      "sequence": 1,
+      "side": "sell",
+      "price": "1",
+      "amount": "10",
+      "orderType": "LIMIT",
+      "expiresAt": 1789838732000,
+      "makerOnly": 1,
+      "takerOnce": 0
+    },
+    {
+      "type": "ORDER_CANCELED",
+      "orderbookId": "3",
+      "orderId": "3494124",
+      "swapper": "0x610041680b053425c3b0fa76e856d6f534f27418",
+      "timestamp": 1789835140284,
+      "sequence": 2,
+      "reason": "USER"
+    }
+  ]
+}

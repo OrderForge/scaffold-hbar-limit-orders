@@ -9,9 +9,9 @@ Scaffold it:
 npm create scaffold-hbar@latest --template OrderForge/scaffold-hbar-limit-orders
 ```
 
-> **Status:** built in increments (see `.harness/prds/`). Increment 0 — the stripped, renamed shell — is
-> done. The market-data terminal, onboarding, order placement and the fill verifier land next. Sections
-> marked _(coming)_ are not implemented yet.
+> **Status:** the market terminal, onboarding, the HCS journal, wallet login, order placement and
+> cancellation, and fill verification are all implemented. Remaining: the live depth WebSocket, the
+> `clob:doctor` conformance check, and the docs pass — see `.harness/prds/`.
 
 ## Disclaimer
 
@@ -73,7 +73,8 @@ template verifies the second part and is explicit about the first.
 | Wallet login | `packages/nextjs/lib/clob/auth.ts` — token in memory only |
 | Onboarding checks | `packages/nextjs/lib/hedera/onboarding.ts` |
 | HCS journal | `packages/nextjs/lib/journal/` + `app/api/journal` (the only place holding a Hedera key) |
-| Fill verification | `packages/nextjs/lib/verify/` _(coming)_ |
+| Order build/sign/cancel | `packages/nextjs/lib/clob/orders.ts` |
+| Fill verification | `packages/nextjs/lib/verify/fills.ts` |
 | Scripts | `packages/hardhat/scripts/` — `clob:bootstrap`, `clob:fund`, `clob:status`; `clob:doctor` _(coming)_ |
 
 ## Full setup (for the on-chain half)

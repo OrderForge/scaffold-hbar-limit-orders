@@ -1,0 +1,40 @@
+{
+  "orders": [
+    {
+      "info": {
+        "reactor": "0x5707B946EE64bD750A587261Ce36ec7024F3088B",
+        "swapper": "0x610041680b053425c3b0fa76e856d6f534f27418",
+        "nonce": "1",
+        "deadline": "1789838732",
+        "additionalValidationContract": "0xd1a45eba17b05cc62b11e2b62b8a00651a79014c",
+        "additionalValidationData": "0x"
+      },
+      "input": {
+        "token": "0x0000000000000000000000000000000000120f46",
+        "amount": "10000000"
+      },
+      "output": {
+        "token": "0x0000000000000000000000000000000000001549",
+        "amount": "10000000",
+        "recipient": "0x610041680b053425c3b0fa76e856d6f534f27418"
+      },
+      "makerOnly": true,
+      "takerOnce": false,
+      "maxTakerFeePips": 2000,
+      "maxMakerFeePips": 2000,
+      "meta": {
+        "id": "3494124",
+        "orderbookId": "3",
+        "status": "ACTIVE",
+        "orderHash": "0x89ab28abae335b7e86eec1680af846cb84377345e4b5030dd0acbcd6cff5d6e1",
+        "signature": "0x00983e0ab716b50abf75faacc369069af0906ec56a42a5ef6fae493602995b968a4b6b5c8f139351ded059ae8649f160db3f7696a2bc258a98c0d9c8061fa5a5e31b",
+        "type": "LIMIT",
+        "filledAmount": "0",
+        "createdAt": "2026-09-19T16:25:33.000Z",
+        "updatedAt": "2026-09-19T16:25:33.000Z",
+        "isAMMEnabled": false,
+        "hcsInitialTransactionId": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "fees_maker": {
+    "side": "maker",
+    "marketId": "0x6c9ff7d1c5e5b81cff2e9b4e9eb67d09253ddd7ae3b6a2fadeb005db2e48bcd5",
+    "makerFeePips": 2000,
+    "capFractionPips": 250000
+  },
+  "fees_taker": {
+    "side": "taker",
+    "marketId": "0x6c9ff7d1c5e5b81cff2e9b4e9eb67d09253ddd7ae3b6a2fadeb005db2e48bcd5",
+    "takerFeePips": 2000
+  },
+  "orders_empty": {
+    "orders": [],
+    "total": 0,
+    "page": 1,
+    "limit": 20,
+    "lastUpdateId": 0
+  }
+}

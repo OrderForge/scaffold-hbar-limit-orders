@@ -8,6 +8,7 @@ import { DryRunSign } from "~~/components/clob/DryRunSign";
 import { AmmBadge, LiveIndicator, MarketStateBadge } from "~~/components/clob/MarketBadges";
 import { NetworkToggle, SwitchToMainnetHint } from "~~/components/clob/NetworkToggle";
 import { OnboardingChecklist } from "~~/components/clob/OnboardingChecklist";
+import { OrderEntry } from "~~/components/clob/OrderEntry";
 import { TradeTape } from "~~/components/clob/TradeTape";
 import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
 import { useChangedLevels, useSecondsSince } from "~~/hooks/clob/useFreshness";
@@ -226,17 +227,11 @@ const MarketPage = () => {
         </div>
 
         <div className="flex flex-col gap-4">
+          <OrderEntry market={book} />
           <OnboardingChecklist market={book} />
           <AccountPanel market={book} />
           <DryRunSign market={book} />
           <MetadataPanel book={book} />
-          <div className="rounded-box border border-dashed border-base-300 p-4 text-sm opacity-70">
-            <p className="font-medium">Order submission arrives next</p>
-            <p className="mt-1">
-              Signing and journalling work today. Sending the signed order to SaucerSwap, and cancelling it, land in the
-              next increment.
-            </p>
-          </div>
         </div>
       </div>
 

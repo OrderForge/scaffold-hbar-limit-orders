@@ -1,0 +1,9 @@
+{
+  "s": 202,
+  "d": {
+    "status": "PENDING",
+    "message": "Cancellation requested. Accepted orders transition to CANCELED once trading core acks — confirm via GET /orders, GET /orders/:id/history, or the ORDER_CANCELED user-stream event.",
+    "accepted": [3494124],
+    "skipped": []
+  }
+}

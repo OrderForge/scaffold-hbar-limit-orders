@@ -3,10 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAccount } from "wagmi";
+import { FillChecks } from "~~/components/clob/FillChecks";
 import { SignInButton } from "~~/components/clob/SignInButton";
 import { useOrderHistory, useOrders } from "~~/hooks/clob/useAccountData";
 import { useClobAuth } from "~~/hooks/clob/useClobAuth";
 import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
+import { useBooks } from "~~/hooks/clob/useMarketData";
+import { useCancelOrder } from "~~/hooks/clob/usePlaceOrder";
 import { AccountOrder, isOpenOrder, normalizeEventType } from "~~/lib/clob/types";
 import { hashscan } from "~~/lib/mirror/client";
 
@@ -18,8 +21,13 @@ const statusClass = (status: string) => {
   return "badge-outline";
 };
 
-const HistoryDrawer = ({ orderId, onClose }: { orderId: string; onClose: () => void }) => {
+const HistoryDrawer = ({ order, onClose }: { order: AccountOrder; onClose: () => void }) => {
+  const orderId = order.id;
   const { data: history, isLoading, error } = useOrderHistory(orderId);
+  const { data: books } = useBooks();
+  // Resolve the market by id from the history response. Matching on the pair label would
+  // be wrong: several markets share a display symbol.
+  const market = history?.orderbookId ? books?.find(book => book.id === history.orderbookId) : undefined;
   const { config } = useClobNetwork();
   const links = hashscan(config);
 
@@ -56,6 +64,8 @@ const HistoryDrawer = ({ orderId, onClose }: { orderId: string; onClose: () => v
           </ul>
         )}
 
+        {market && history && <FillChecks order={order} market={market} events={history.events} />}
+
         <p className="mt-6 text-xs opacity-60">
           Event names differ by surface: the live stream says <code className="font-mono">ORDER_CANCELED</code> where
           this history says <code className="font-mono">CANCELED</code>. The template normalises both.
@@ -65,7 +75,32 @@ const HistoryDrawer = ({ orderId, onClose }: { orderId: string; onClose: () => v
   );
 };
 
-const OrderRow = ({ order, onOpen }: { order: AccountOrder; onOpen: (id: string) => void }) => (
+const CancelButton = ({ orderId }: { orderId: string }) => {
+  const { cancel, stage, error } = useCancelOrder();
+
+  if (stage === "confirmed") return <span className="text-xs opacity-60">cancelled</span>;
+
+  return (
+    <span className="inline-flex items-center gap-1">
+      <button
+        type="button"
+        className="btn btn-ghost btn-xs"
+        disabled={stage === "requesting" || stage === "requested"}
+        onClick={() => cancel(orderId)}
+      >
+        {/* A 202 means accepted, not cancelled: say so until the history confirms it. */}
+        {stage === "requesting" ? "cancelling…" : stage === "requested" ? "cancel requested" : "cancel"}
+      </button>
+      {error && (
+        <span className="text-xs text-error" title={error}>
+          !
+        </span>
+      )}
+    </span>
+  );
+};
+
+const OrderRow = ({ order, onOpen }: { order: AccountOrder; onOpen: (order: AccountOrder) => void }) => (
   <tr className="hover">
     <td className="font-mono text-xs">{order.id}</td>
     <td className="text-xs">{order.pair ?? "—"}</td>
@@ -79,7 +114,8 @@ const OrderRow = ({ order, onOpen }: { order: AccountOrder; onOpen: (id: string)
       <span className={`badge badge-sm ${statusClass(order.status)}`}>{order.status}</span>
     </td>
     <td className="text-right">
-      <button type="button" className="btn btn-ghost btn-xs" onClick={() => onOpen(order.id)}>
+      {isOpenOrder(order) && <CancelButton orderId={order.id} />}
+      <button type="button" className="btn btn-ghost btn-xs" onClick={() => onOpen(order)}>
         history
       </button>
     </td>
@@ -90,7 +126,7 @@ const OrdersPage = () => {
   const { isConnected } = useAccount();
   const { isSignedIn } = useClobAuth();
   const { data: orders, isLoading, error } = useOrders();
-  const [openOrderId, setOpenOrderId] = useState<string | null>(null);
+  const [openOrder, setOpenOrder] = useState<AccountOrder | null>(null);
 
   const open = orders?.filter(isOpenOrder) ?? [];
   const past = orders?.filter(order => !isOpenOrder(order)) ?? [];
@@ -166,7 +202,7 @@ const OrdersPage = () => {
                     </thead>
                     <tbody>
                       {section.rows.map(order => (
-                        <OrderRow key={order.id} order={order} onOpen={setOpenOrderId} />
+                        <OrderRow key={order.id} order={order} onOpen={setOpenOrder} />
                       ))}
                     </tbody>
                   </table>
@@ -176,7 +212,7 @@ const OrdersPage = () => {
         </div>
       )}
 
-      {openOrderId && <HistoryDrawer orderId={openOrderId} onClose={() => setOpenOrderId(null)} />}
+      {openOrder && <HistoryDrawer order={openOrder} onClose={() => setOpenOrder(null)} />}
     </div>
   );
 };

@@ -1,0 +1,27 @@
+{
+  "orderId": 3494124,
+  "orderbookId": "3",
+  "events": [
+    {
+      "id": "7797743",
+      "type": "CREATED",
+      "timestamp": 1789835133000,
+      "txHash": null,
+      "reason": null,
+      "htsResponseCode": null,
+      "fill": null
+    },
+    {
+      "id": "7797756",
+      "type": "CANCELED",
+      "timestamp": 1789835140000,
+      "txHash": null,
+      "reason": "USER",
+      "htsResponseCode": null,
+      "fill": null
+    }
+  ],
+  "total": 2,
+  "page": 1,
+  "limit": 50
+}

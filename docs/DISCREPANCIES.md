@@ -95,7 +95,14 @@ Not against the bid or the ask. Confirmed against captured snapshots on both net
 is negative when the book is crossed, which is a real state, not an error: testnet book 3
 was observed with the best bid above the best ask.
 
-## 12. Fees are pips, and the docs are right — but it is worth repeating
+## 12. A fee fractionally above the cap can look compliant
+
+Not an API bug, but a trap it creates: the fee is reported in absolute units while the cap is in
+pips, so the natural check is `fee / filled <= cap`. Integer division truncates, and 2000.1 pips
+reads as 2000 — exactly at a 2000-pip cap. The verifier compares `fee x 1e6 <= cap x filled`
+instead, with no division at all. Caught by a test, not by review.
+
+## 13. Fees are pips, and the docs are right — but it is worth repeating
 
 1 pip = 1e-6 = 0.0001%, so `takerFeePips: 2000` is 0.2%. Read as basis points, which is the
 common assumption, that becomes 20% — a hundredfold error in the user's favour right up

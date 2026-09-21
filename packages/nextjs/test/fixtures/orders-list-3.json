@@ -1,0 +1,24 @@
+{
+  "orders": [
+    {
+      "id": 3494124,
+      "createdAt": "2026-09-19T16:25:33.000Z",
+      "pair": "SAUCE/USDC",
+      "type": "LIMIT",
+      "direction": "sell",
+      "price": "1",
+      "amount": "10",
+      "percentFilled": "0.00",
+      "status": "ACTIVE",
+      "total": "10",
+      "hcsInitialTransactionId": null,
+      "nonce": "1",
+      "deadline": "1789838732",
+      "ocoLinkedOrderId": null
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "limit": 20,
+  "lastUpdateId": 1
+}

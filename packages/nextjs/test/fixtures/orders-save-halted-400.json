@@ -1,0 +1,7 @@
+{
+  "status": 400,
+  "body": {
+    "error": "Orderbook 3 is currently halted and not accepting new orders"
+  },
+  "_note": "POST /orders/save on testnet book 3 while isMarketHalted=1, 2026-09-20. /orders/build still returns 200 \u2014 the halt is only enforced at save."
+}
