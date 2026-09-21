@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Everything here runs offline against the fixtures captured in
+# packages/nextjs/test/fixtures, so CI never fails because SaucerSwap is having a bad day.
+# The live conformance check is `yarn clob:doctor`, deliberately kept out of CI — see below.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node: [lts/*]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup node env
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Check types
+        run: yarn next:check-types
+
+      - name: Compile contracts
+        run: yarn hardhat:compile
+
+      - name: Contract tests
+        run: yarn hardhat:test
+
+      - name: Client tests
+        run: yarn test:clob
+
+      - name: Production build
+        run: yarn next:build
+        env:
+          # No secret is needed to build: market data is public and the journal degrades
+          # to a "not configured yet" state without one.
+          NEXT_PUBLIC_CLOB_NETWORK: testnet
+
+      - name: No secrets committed
+        run: |
+          # The bounty's eligibility gate fails on a committed .env, so check rather than trust.
+          if git ls-files | grep -E '(^|/)\.env$|\.clob\.json$'; then
+            echo "A secret or local state file is tracked by git."
+            exit 1
+          fi
+          echo "No .env or .clob.json tracked."

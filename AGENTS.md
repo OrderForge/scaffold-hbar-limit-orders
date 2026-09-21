@@ -60,14 +60,21 @@ where the SaucerSwap reactor and Permit2 go).
 1. **Every numeric from the Orderbook API is a string.** Never `Number()` one for arithmetic. Use `bigint`
    on smallest units, or a decimal library. Money bugs are the fastest way to lose this template.
 2. **Key markets on `id`, never on symbol.** Testnet has three different books all labelled "HBAR".
-   Symbols are display-only.
-3. **Hedera values:** contract amounts are tinybars (8dp); a transaction's `value` over JSON-RPC is wei
+   Symbols are display-only, and ids differ between networks.
+3. **Respect the market's own grid.** Prices must be multiples of `tickStep`, sizes multiples of
+   `sizeStep` and whole `lotSize` units, and the order value must clear `minNotional` — which is in
+   the quote token's smallest units, not a decimal. `validateOrder` checks all of it before the wallet
+   is asked for a signature.
+4. **Reconcile depth by `lastUpdateId`.** A `/ws/depth` diff may only be applied if it starts exactly
+   where the last one ended; any gap means fetching a fresh snapshot. A book with a missed update looks
+   fine and is wrong.
+5. **Hedera values:** contract amounts are tinybars (8dp); a transaction's `value` over JSON-RPC is wei
    (18dp) — multiply tinybars by `10^10`.
-4. **Never write a JWT to storage.** Memory only: no localStorage, no cookie, no logs. WebSocket URLs carry
+6. **Never write a JWT to storage.** Memory only: no localStorage, no cookie, no logs. WebSocket URLs carry
    the token in the query string, so never log a full WS URL.
-5. **Secrets stay out of the repo.** `.env`, `.clob.json` and `docs/kit/` are gitignored. The Hedera
+7. **Secrets stay out of the repo.** `.env`, `.clob.json` and `docs/kit/` are gitignored. The Hedera
    operator key lives only in `app/api/journal`, server-side.
-6. **The chain is the record.** Onboarding state and fills are checked against the mirror node and the
+8. **The chain is the record.** Onboarding state and fills are checked against the mirror node and the
    contracts, never taken from the Orderbook API's word.
 
 ## UI

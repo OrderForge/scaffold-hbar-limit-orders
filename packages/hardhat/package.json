@@ -10,6 +10,7 @@
     "check-types": "tsc --noEmit --incremental",
     "clean": "hardhat clean",
     "clob:bootstrap": "ts-node --files ./scripts/bootstrap.ts",
+    "clob:doctor": "ts-node --files ./scripts/doctor.ts",
     "clob:fund": "ts-node --files ./scripts/fund.ts",
     "clob:status": "ts-node --files ./scripts/status.ts",
     "compile": "hardhat compile",

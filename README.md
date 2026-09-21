@@ -46,15 +46,16 @@ HTTP API and **no published client library**. This template is that client, plus
 
 - **Market data** — books, depth, the trade tape and quotes, with each market's trading rules (tick, size
   step, lot, minimum notional) applied correctly.
-- **Onboarding** — before it can trade, a Hedera account must associate the tokens, approve them to
-  Permit2, and approve the reactor inside Permit2. The template detects each step and does it in one click.
+- **Onboarding** — before it can trade, a Hedera account must associate the tokens (HTS), approve them
+  to Permit2, and approve the reactor inside Permit2. The template detects each step, does it in one
+  click, and re-checks the result against the chain rather than trusting the receipt.
 - **Account** — wallet-challenge login, your own fee rates, your orders and their history. The token is
   short-lived and held in memory only: never localStorage, never a cookie, never logged.
 - **Orders** — build, sign (EIP-712) and submit; cancel through the API or directly on-chain.
 - **Journal** — every signed intent goes to an HCS topic before submission, giving you your own
   consensus-timestamped record of what you signed.
-- **Verification** — every fill is checked on-chain against the order you signed: price, fee cap,
-  deadline, size and recipient.
+- **Verification** — every fill is verified on-chain against the order you signed: price, fee cap,
+  deadline, size and recipient. See [docs/hedera.md](docs/hedera.md).
 
 ### What you still trust SaucerSwap for
 

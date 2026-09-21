@@ -10,6 +10,7 @@
   },
   "scripts": {
     "clob:bootstrap": "yarn workspace @sh/hardhat clob:bootstrap",
+    "clob:doctor": "yarn workspace @sh/hardhat clob:doctor",
     "clob:fund": "yarn workspace @sh/hardhat clob:fund",
     "clob:status": "yarn workspace @sh/hardhat clob:status",
     "format": "yarn next:format && yarn hardhat:format",
@@ -32,8 +33,9 @@
     "hardhat:verify": "yarn workspace @sh/hardhat verify",
     "hardhat:verify:mainnet": "yarn workspace @sh/hardhat verify:mainnet",
     "hardhat:verify:testnet": "yarn workspace @sh/hardhat verify:testnet",
-    "lint": "yarn next:lint && yarn hardhat:lint",
+    "lint": "yarn next:lint && yarn hardhat:lint && yarn lint:wording",
     "lint-staged": "lint-staged",
+    "lint:wording": "node scripts/lint-wording.mjs",
     "next:build": "yarn workspace @sh/nextjs build",
     "next:check-types": "yarn workspace @sh/nextjs check-types",
     "next:dev": "yarn workspace @sh/nextjs dev",
