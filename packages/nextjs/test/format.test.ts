@@ -1,4 +1,5 @@
 import books from "./fixtures/books.json";
+import mainnetBooks from "./fixtures/mainnet-books.json";
 import { describe, expect, it } from "vitest";
 import {
   compareDecimalStrings,
@@ -15,6 +16,7 @@ import {
   stepDecimals,
   validateOrder,
 } from "~~/lib/clob/format";
+import { orderbookSchema } from "~~/lib/clob/types";
 
 /** The real SAUCE/USDC market — the rules every test below is checked against. */
 const market = books.orderbooks.find(book => book.id === "3")!;
@@ -143,11 +145,36 @@ describe("validateOrder", () => {
     expect(validateOrder({ price: "1", size: "10.000001" }, rules)).toMatchObject({ ok: false, rule: "sizeStep" });
   });
 
-  it("names minNotional when the order is too small to be worth placing", () => {
-    // 10 SAUCE at 0.0428608 = 0.428608 USDC, below the 1 USDC minimum.
-    const result = validateOrder({ price: "0.0428608", size: "10" }, rules);
-    expect(result).toMatchObject({ ok: false, rule: "minNotional" });
-    expect(!result.ok && result.message).toContain("0.428608");
+  it("reads minNotional as smallest units, not as a decimal", () => {
+    // Every mainnet market reports minNotional 15000000 against 6-decimal USDC, i.e. 15
+    // USDC. Read as a decimal that demands 15 million USDC and blocks every real order.
+    const mainnetMarket = orderbookSchema.parse(mainnetBooks.orderbooks.find(book => book.id === "1"));
+    const mainnetRules = {
+      tickStep: mainnetMarket.tickStep,
+      sizeStep: mainnetMarket.sizeStep,
+      lotSize: mainnetMarket.lotSize,
+      minNotional: mainnetMarket.minNotional,
+      baseTokenDecimals: mainnetMarket.baseTokenDecimals,
+      quoteTokenDecimals: mainnetMarket.quoteTokenDecimals,
+      status: "OPEN",
+      isMarketHalted: 0,
+    };
+    expect(mainnetMarket.minNotional).toBe("15000000");
+
+    // 1000 HBAR at 0.09 = 90 USDC: comfortably above a 15 USDC minimum.
+    expect(validateOrder({ price: "0.09", size: "1000" }, mainnetRules)).toEqual({ ok: true });
+
+    // 100 HBAR at 0.09 = 9 USDC: below it.
+    const tooSmall = validateOrder({ price: "0.09", size: "100" }, mainnetRules);
+    expect(tooSmall).toMatchObject({ ok: false, rule: "minNotional" });
+    // The message must speak in tokens, not raw units.
+    expect(!tooSmall.ok && tooSmall.message).toContain("minimum of 15");
+    expect(!tooSmall.ok && tooSmall.message).not.toContain("15000000");
+  });
+
+  it("accepts a small order where the market's minimum is tiny", () => {
+    // Testnet reports minNotional 1, i.e. 0.000001 USDC — effectively no minimum.
+    expect(validateOrder({ price: "0.0428608", size: "10" }, rules)).toEqual({ ok: true });
   });
 
   it("rejects zero and negative values", () => {

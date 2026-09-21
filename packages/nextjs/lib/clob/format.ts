@@ -221,12 +221,19 @@ export const validateOrder = (order: { price: string; size: string }, market: Ma
   }
 
   const value = notionalUnits(order.price, order.size, baseTokenDecimals, quoteTokenDecimals);
-  const minimum = parseDecimal(market.minNotional, quoteTokenDecimals);
+  // `minNotional` is in the quote token's smallest units, exactly like `lotSize` — mainnet
+  // markets report 15000000 against 6-decimal USDC, meaning 15 USDC. Reading it as a
+  // decimal demands 15 million USDC on mainnet, and 1 USDC on testnet where the real
+  // minimum is 0.000001.
+  const minimum = BigInt(market.minNotional.split(".")[0] || "0");
   if (value < minimum) {
     return {
       ok: false,
       rule: "minNotional",
-      message: `Order value ${formatUnits(value, quoteTokenDecimals)} is below the minimum of ${market.minNotional}.`,
+      message: `Order value ${formatUnits(value, quoteTokenDecimals)} is below this market's minimum of ${formatUnits(
+        minimum,
+        quoteTokenDecimals,
+      )}.`,
     };
   }
 

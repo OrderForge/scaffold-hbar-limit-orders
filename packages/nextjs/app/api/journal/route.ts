@@ -11,7 +11,30 @@ import { encodeIntent, orderIntentSchema } from "~~/lib/journal/types";
  *
  * Configure with `HEDERA_OPERATOR_ID`, `HEDERA_OPERATOR_KEY` and `JOURNAL_TOPIC_ID`
  * (`yarn clob:bootstrap` creates the topic and prints all three).
+ *
+ * **The operator pays for every message, not the user.** That is deliberate — a trader
+ * should not need HBAR to keep a record of what they signed — but it also means this route
+ * spends the deployer's money on request, so it is rate limited per caller. Anyone running
+ * this in production should put their own quota or authentication in front of it: the
+ * comment is not a substitute for that decision.
  */
+
+/** Simple in-memory quota. Resets on restart; enough to stop a loop draining the operator. */
+const RATE_LIMIT = { windowMs: 60_000, max: 10 };
+const seen = new Map<string, { count: number; resetAt: number }>();
+
+const overQuota = (key: string): boolean => {
+  const now = Date.now();
+  const entry = seen.get(key);
+
+  if (!entry || entry.resetAt <= now) {
+    seen.set(key, { count: 1, resetAt: now + RATE_LIMIT.windowMs });
+    return false;
+  }
+
+  entry.count += 1;
+  return entry.count > RATE_LIMIT.max;
+};
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +55,14 @@ const getClient = () => {
 };
 
 export async function POST(request: NextRequest) {
+  const caller = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
+  if (overQuota(caller)) {
+    return NextResponse.json(
+      { error: "Too many journal writes from this address. Each message costs the operator HBAR." },
+      { status: 429 },
+    );
+  }
+
   const topicIdRaw = process.env.JOURNAL_TOPIC_ID || process.env.NEXT_PUBLIC_JOURNAL_TOPIC_ID;
   if (!topicIdRaw) {
     return NextResponse.json(

@@ -47,6 +47,9 @@ export const RainbowKitCustomConnectButton = () => {
                   <div className="flex flex-col items-center mr-2 text-base-content">
                     <Balance
                       address={account.address as Address}
+                      // Without this the component falls back to the first configured
+                      // chain (testnet), showing a testnet balance to a mainnet wallet.
+                      chain={targetNetwork}
                       style={{
                         minHeight: "0",
                         height: "auto",

@@ -171,7 +171,8 @@ export const DryRunSign = ({ market }: { market: Orderbook }) => {
     <div className="rounded-box bg-base-100 p-4">
       <h2 className="text-sm font-semibold uppercase tracking-wide opacity-70">Sign an intent (dry run)</h2>
       <p className="mt-1 text-xs opacity-70">
-        Signs an order in your wallet and writes it to the HCS journal. Nothing is sent to SaucerSwap.
+        Signs an order in your wallet and writes it to the HCS journal. Nothing is sent to SaucerSwap, and signing costs
+        you nothing — the app&apos;s operator account pays the fraction of a cent each journal message costs.
       </p>
 
       <WalletGate action="sign an intent">
