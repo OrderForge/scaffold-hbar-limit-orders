@@ -9,9 +9,13 @@ import { ClobNetwork, ClobNetworkConfig, getApiBase, getNetworkConfig } from "./
 import { ClobParseError, MarketNotFoundError } from "./errors";
 import { request, withQuery } from "./http";
 import {
+  AccountOrder,
   DepthSnapshot,
   ExactInputQuote,
   ExactOutputQuote,
+  Fees,
+  OnboardingStatus,
+  OrderHistory,
   Orderbook,
   SignatureDomain,
   TradesResponse,
@@ -19,6 +23,10 @@ import {
   depthSnapshotSchema,
   exactInputQuoteSchema,
   exactOutputQuoteSchema,
+  feesSchema,
+  onboardingStatusSchema,
+  orderHistorySchema,
+  ordersResponseSchema,
   signatureDomainSchema,
   tradesResponseSchema,
 } from "./types";
@@ -135,6 +143,39 @@ export class ClobClient {
     });
     const payload = await request<unknown>(url, { cacheMs: CACHE_MS.quote, signal: params.signal });
     return parse(exactOutputQuoteSchema, payload, url);
+  }
+
+  /* --------------------------------------------------------------- *
+   * Authenticated. Every call takes the caller's token explicitly so  *
+   * the client never holds one, and a token cannot leak between       *
+   * accounts or networks.                                             *
+   * --------------------------------------------------------------- */
+
+  /** Fee rates for one side of a market, in pips. */
+  async getFees(orderbookId: string, side: "maker" | "taker", token: string, signal?: AbortSignal): Promise<Fees> {
+    const url = withQuery(this.url(`/fees/${encodeURIComponent(orderbookId)}`), { side });
+    return parse(feesSchema, await request<unknown>(url, { token, signal }), url);
+  }
+
+  /** The venue's own view of onboarding. Compare it with `lib/hedera/onboarding`. */
+  async getOnboardingStatus(orderbookId: string, token: string, signal?: AbortSignal): Promise<OnboardingStatus> {
+    const url = this.url(`/onboarding/${encodeURIComponent(orderbookId)}/status`);
+    return parse(onboardingStatusSchema, await request<unknown>(url, { token, signal }), url);
+  }
+
+  /** Orders belonging to the authenticated account. */
+  async getOrders(
+    token: string,
+    options: { page?: number; limit?: number; signal?: AbortSignal } = {},
+  ): Promise<AccountOrder[]> {
+    const url = withQuery(this.url("/orders"), { page: options.page, limit: options.limit ?? 50 });
+    return parse(ordersResponseSchema, await request<unknown>(url, { token, signal: options.signal }), url).orders;
+  }
+
+  /** Per-order event history. The final word on whether a cancel actually landed. */
+  async getOrderHistory(orderId: string, token: string, signal?: AbortSignal): Promise<OrderHistory> {
+    const url = this.url(`/orders/${encodeURIComponent(orderId)}/history`);
+    return parse(orderHistorySchema, await request<unknown>(url, { token, signal }), url);
   }
 
   /** EIP-712 domain for this environment. Cached — it only changes on redeployment. */

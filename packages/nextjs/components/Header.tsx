@@ -4,7 +4,13 @@ import React, { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bars3Icon, BookOpenIcon, BugAntIcon, ChartBarIcon } from "@heroicons/react/24/outline";
+import {
+  Bars3Icon,
+  BookOpenIcon,
+  BugAntIcon,
+  ChartBarIcon,
+  ClipboardDocumentListIcon,
+} from "@heroicons/react/24/outline";
 import { RainbowKitCustomConnectButton } from "~~/components/scaffold-hbar";
 import { useOutsideClick } from "~~/hooks/scaffold-hbar";
 
@@ -23,6 +29,11 @@ export const menuLinks: HeaderMenuLink[] = [
     label: "Markets",
     href: "/markets",
     icon: <ChartBarIcon className="h-4 w-4" />,
+  },
+  {
+    label: "Orders",
+    href: "/orders",
+    icon: <ClipboardDocumentListIcon className="h-4 w-4" />,
   },
   {
     label: "Journal",

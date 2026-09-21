@@ -12,6 +12,7 @@ import { Footer } from "~~/components/Footer";
 import { Header } from "~~/components/Header";
 import { LocalChainErrorBanner } from "~~/components/LocalChainErrorBanner";
 import { BlockieAvatar } from "~~/components/scaffold-hbar";
+import { ClobAuthProvider } from "~~/hooks/clob/useClobAuth";
 import { ClobNetworkProvider } from "~~/hooks/clob/useClobNetwork";
 import { wagmiConfig } from "~~/services/web3/wagmiConfig";
 
@@ -76,7 +77,9 @@ export const ScaffoldHbarAppWithProviders = ({ children }: { children: React.Rea
         <ProgressBar height="3px" color="#2299dd" />
         <RainbowKitProvider avatar={BlockieAvatar} coolMode initialChain={hederaTestnet} theme={rainbowKitTheme}>
           <ClobNetworkProvider>
-            <ScaffoldHbarApp>{children}</ScaffoldHbarApp>
+            <ClobAuthProvider>
+              <ScaffoldHbarApp>{children}</ScaffoldHbarApp>
+            </ClobAuthProvider>
           </ClobNetworkProvider>
         </RainbowKitProvider>
       </QueryClientProvider>

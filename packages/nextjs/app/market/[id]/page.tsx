@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { AccountPanel } from "~~/components/clob/AccountPanel";
 import { DepthLadder, SpreadReadout } from "~~/components/clob/DepthLadder";
 import { DryRunSign } from "~~/components/clob/DryRunSign";
 import { AmmBadge, LiveIndicator, MarketStateBadge } from "~~/components/clob/MarketBadges";
@@ -226,6 +227,7 @@ const MarketPage = () => {
 
         <div className="flex flex-col gap-4">
           <OnboardingChecklist market={book} />
+          <AccountPanel market={book} />
           <DryRunSign market={book} />
           <MetadataPanel book={book} />
           <div className="rounded-box border border-dashed border-base-300 p-4 text-sm opacity-70">

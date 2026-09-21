@@ -1,0 +1,184 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useAccount } from "wagmi";
+import { SignInButton } from "~~/components/clob/SignInButton";
+import { useOrderHistory, useOrders } from "~~/hooks/clob/useAccountData";
+import { useClobAuth } from "~~/hooks/clob/useClobAuth";
+import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
+import { AccountOrder, isOpenOrder, normalizeEventType } from "~~/lib/clob/types";
+import { hashscan } from "~~/lib/mirror/client";
+
+const statusClass = (status: string) => {
+  const value = status.toUpperCase();
+  if (value === "FILLED") return "badge-success";
+  if (value === "CANCELED" || value === "CANCELLED") return "badge-ghost";
+  if (value === "ACTIVE" || value === "OPEN") return "badge-info";
+  return "badge-outline";
+};
+
+const HistoryDrawer = ({ orderId, onClose }: { orderId: string; onClose: () => void }) => {
+  const { data: history, isLoading, error } = useOrderHistory(orderId);
+  const { config } = useClobNetwork();
+  const links = hashscan(config);
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/30" onClick={onClose}>
+      <div
+        className="h-full w-full max-w-md overflow-y-auto bg-base-100 p-6"
+        onClick={event => event.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Order {orderId}</h2>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
+            close
+          </button>
+        </div>
+
+        {isLoading && <p className="mt-6 text-sm opacity-60">Loading history…</p>}
+        {error && <p className="mt-6 text-sm text-error">{(error as Error).message}</p>}
+
+        {history && (
+          <ul className="mt-6 space-y-3">
+            {history.events.map(event => (
+              <li key={event.id} className="border-l-2 border-base-300 pl-3">
+                <p className="text-sm font-medium">{normalizeEventType(event.type)}</p>
+                <p className="font-mono text-xs opacity-60">{new Date(event.timestamp).toLocaleString()}</p>
+                {event.reason && <p className="text-xs opacity-70">reason: {event.reason}</p>}
+                {event.txHash && (
+                  <a className="link text-xs" href={links.transaction(event.txHash)} target="_blank" rel="noreferrer">
+                    settlement transaction
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <p className="mt-6 text-xs opacity-60">
+          Event names differ by surface: the live stream says <code className="font-mono">ORDER_CANCELED</code> where
+          this history says <code className="font-mono">CANCELED</code>. The template normalises both.
+        </p>
+      </div>
+    </div>
+  );
+};
+
+const OrderRow = ({ order, onOpen }: { order: AccountOrder; onOpen: (id: string) => void }) => (
+  <tr className="hover">
+    <td className="font-mono text-xs">{order.id}</td>
+    <td className="text-xs">{order.pair ?? "—"}</td>
+    <td className={`text-xs ${order.direction === "buy" ? "text-success" : "text-error"}`}>
+      {order.direction?.toUpperCase() ?? "—"}
+    </td>
+    <td className="text-right font-mono text-xs">{order.price ?? "—"}</td>
+    <td className="text-right font-mono text-xs">{order.amount ?? "—"}</td>
+    <td className="text-right font-mono text-xs">{order.percentFilled ?? "0.00"}%</td>
+    <td>
+      <span className={`badge badge-sm ${statusClass(order.status)}`}>{order.status}</span>
+    </td>
+    <td className="text-right">
+      <button type="button" className="btn btn-ghost btn-xs" onClick={() => onOpen(order.id)}>
+        history
+      </button>
+    </td>
+  </tr>
+);
+
+const OrdersPage = () => {
+  const { isConnected } = useAccount();
+  const { isSignedIn } = useClobAuth();
+  const { data: orders, isLoading, error } = useOrders();
+  const [openOrderId, setOpenOrderId] = useState<string | null>(null);
+
+  const open = orders?.filter(isOpenOrder) ?? [];
+  const past = orders?.filter(order => !isOpenOrder(order)) ?? [];
+
+  return (
+    <div className="mx-auto w-full max-w-6xl px-4 py-8">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Your orders</h1>
+          <p className="mt-1 text-sm opacity-70">
+            Orders for the connected account, read from SaucerSwap with a short-lived token held in memory only.
+          </p>
+        </div>
+        <SignInButton />
+      </div>
+
+      {!isConnected && (
+        <p className="mt-12 rounded-box bg-base-200 p-8 text-center text-sm opacity-70">
+          Connect a wallet to see your orders.
+        </p>
+      )}
+
+      {isConnected && !isSignedIn && (
+        <div className="mt-12 rounded-box bg-base-200 p-8 text-center">
+          <p className="text-sm opacity-80">
+            Sign in to read this account&apos;s orders. Signing the challenge proves you control the account; it moves
+            nothing and costs nothing.
+          </p>
+        </div>
+      )}
+
+      {error && <div className="alert alert-error mt-6">{(error as Error).message}</div>}
+      {isSignedIn && isLoading && <p className="mt-12 text-center opacity-60">Loading orders…</p>}
+
+      {isSignedIn && orders && orders.length === 0 && (
+        <div className="mt-12 rounded-box bg-base-200 p-8 text-center text-sm opacity-70">
+          <p>No orders yet.</p>
+          <p className="mt-1">
+            Order placement lands in the next increment. Until then,{" "}
+            <Link href="/markets" className="link">
+              browse the markets
+            </Link>{" "}
+            or sign a dry-run intent from a market page.
+          </p>
+        </div>
+      )}
+
+      {isSignedIn && orders && orders.length > 0 && (
+        <div className="mt-6 space-y-8">
+          {[
+            { title: "Open", rows: open },
+            { title: "Past", rows: past },
+          ]
+            .filter(section => section.rows.length > 0)
+            .map(section => (
+              <div key={section.title}>
+                <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide opacity-70">
+                  {section.title} ({section.rows.length})
+                </h2>
+                <div className="overflow-x-auto rounded-box bg-base-100">
+                  <table className="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Id</th>
+                        <th>Market</th>
+                        <th>Side</th>
+                        <th className="text-right">Price</th>
+                        <th className="text-right">Size</th>
+                        <th className="text-right">Filled</th>
+                        <th>Status</th>
+                        <th />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {section.rows.map(order => (
+                        <OrderRow key={order.id} order={order} onOpen={setOpenOrderId} />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+        </div>
+      )}
+
+      {openOrderId && <HistoryDrawer orderId={openOrderId} onClose={() => setOpenOrderId(null)} />}
+    </div>
+  );
+};
+
+export default OrdersPage;

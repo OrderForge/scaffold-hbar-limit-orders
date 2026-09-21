@@ -48,6 +48,8 @@ HTTP API and **no published client library**. This template is that client, plus
   step, lot, minimum notional) applied correctly.
 - **Onboarding** — before it can trade, a Hedera account must associate the tokens, approve them to
   Permit2, and approve the reactor inside Permit2. The template detects each step and does it in one click.
+- **Account** — wallet-challenge login, your own fee rates, your orders and their history. The token is
+  short-lived and held in memory only: never localStorage, never a cookie, never logged.
 - **Orders** — build, sign (EIP-712) and submit; cancel through the API or directly on-chain.
 - **Journal** — every signed intent goes to an HCS topic before submission, giving you your own
   consensus-timestamped record of what you signed.
@@ -68,6 +70,7 @@ template verifies the second part and is explicit about the first.
 | Typed API client | `packages/nextjs/lib/clob/` |
 | Same-origin API proxy | `packages/nextjs/app/api/clob/[network]/[...path]` |
 | Mirror node reads | `packages/nextjs/lib/mirror/` |
+| Wallet login | `packages/nextjs/lib/clob/auth.ts` — token in memory only |
 | Onboarding checks | `packages/nextjs/lib/hedera/onboarding.ts` |
 | HCS journal | `packages/nextjs/lib/journal/` + `app/api/journal` (the only place holding a Hedera key) |
 | Fill verification | `packages/nextjs/lib/verify/` _(coming)_ |

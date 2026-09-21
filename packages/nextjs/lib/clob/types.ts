@@ -184,3 +184,103 @@ export const isTradeable = (book: Pick<Orderbook, "status" | "isMarketHalted">):
 /** Display label for a market. Never use this as an identity — key on `id`. */
 export const marketLabel = (book: Pick<Orderbook, "baseTokenSymbol" | "quoteTokenSymbol">): string =>
   `${book.baseTokenSymbol ?? "?"}/${book.quoteTokenSymbol ?? "?"}`;
+
+/* ------------------------------------------------------------------ *
+ * Authenticated surface. Shapes captured from the live API, not docs. *
+ * ------------------------------------------------------------------ */
+
+export const feesSchema = z
+  .object({
+    side: z.string(),
+    marketId: z.string().optional(),
+    makerFeePips: z.number().optional(),
+    takerFeePips: z.number().optional(),
+    /** Maker rebate cap as a fraction of taker fees, same pip scale. Not a trading fee. */
+    capFractionPips: z.number().optional(),
+  })
+  .passthrough();
+
+export type Fees = z.infer<typeof feesSchema>;
+
+export const onboardingStatusSchema = z
+  .object({
+    steps: z.record(z.boolean()),
+    pendingSteps: z.array(z.string()),
+    completedSteps: z.array(z.string()),
+    isComplete: z.boolean(),
+  })
+  .passthrough();
+
+export type OnboardingStatus = z.infer<typeof onboardingStatusSchema>;
+
+/**
+ * An order as `GET /orders` returns it: flattened, human-readable amounts, and a numeric
+ * id — a different shape from the one `POST /orders/save` echoes back.
+ */
+export const accountOrderSchema = z
+  .object({
+    id: idLike,
+    createdAt: z.string().optional(),
+    pair: z.string().optional(),
+    type: z.string().optional(),
+    direction: z.string().optional(),
+    price: z.string().optional(),
+    amount: z.string().optional(),
+    percentFilled: z.string().optional(),
+    status: z.string(),
+    total: z.string().optional(),
+    hcsInitialTransactionId: z.string().nullable().optional(),
+    nonce: z.union([z.string(), z.number()]).optional(),
+    deadline: z.union([z.string(), z.number()]).optional(),
+    ocoLinkedOrderId: z.union([z.string(), z.number()]).nullable().optional(),
+  })
+  .passthrough();
+
+export type AccountOrder = z.infer<typeof accountOrderSchema>;
+
+export const ordersResponseSchema = z
+  .object({
+    orders: z.array(accountOrderSchema),
+    total: z.number().optional(),
+    page: z.number().optional(),
+    limit: z.number().optional(),
+    lastUpdateId: z.number().optional(),
+  })
+  .passthrough();
+
+export type OrdersResponse = z.infer<typeof ordersResponseSchema>;
+
+export const orderEventSchema = z
+  .object({
+    id: idLike,
+    /** "CREATED" | "CANCELED" | "FILLED" … note history says CANCELED where the stream says ORDER_CANCELED. */
+    type: z.string(),
+    timestamp: z.number(),
+    txHash: z.string().nullable().optional(),
+    reason: z.string().nullable().optional(),
+    htsResponseCode: z.union([z.string(), z.number()]).nullable().optional(),
+    fill: z.unknown().nullable().optional(),
+  })
+  .passthrough();
+
+export type OrderEvent = z.infer<typeof orderEventSchema>;
+
+export const orderHistorySchema = z
+  .object({
+    orderId: idLike,
+    orderbookId: idLike.optional(),
+    events: z.array(orderEventSchema),
+    total: z.number().optional(),
+  })
+  .passthrough();
+
+export type OrderHistory = z.infer<typeof orderHistorySchema>;
+
+/**
+ * Event names differ by surface: the user-event stream emits ORDER_CANCELED, order history
+ * records CANCELED. One normaliser so the UI never has to care.
+ */
+export const normalizeEventType = (type: string): string => type.replace(/^ORDER_/, "").toUpperCase();
+
+export const isOpenOrder = (order: Pick<AccountOrder, "status">): boolean =>
+  ["ACTIVE", "OPEN", "PARTIALLY_FILLED", "PENDING"].includes(order.status.toUpperCase());
