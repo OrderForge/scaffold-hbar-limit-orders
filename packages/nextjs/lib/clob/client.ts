@@ -5,7 +5,7 @@
  * authenticated surface (fees, orders, onboarding, WebSockets) arrives in later increments
  * and reuses `request()` from `http.ts`.
  */
-import { ClobNetwork, ClobNetworkConfig, getNetworkConfig } from "./config";
+import { ClobNetwork, ClobNetworkConfig, getApiBase, getNetworkConfig } from "./config";
 import { ClobParseError, MarketNotFoundError } from "./errors";
 import { request, withQuery } from "./http";
 import {
@@ -61,8 +61,12 @@ export class ClobClient {
     return this.config.network;
   }
 
+  /**
+   * In a browser this points at the app's own proxy route, because the Orderbook API
+   * serves no CORS headers; in Node it points straight at the API.
+   */
   private url(path: string) {
-    return `${this.config.apiUrl}${path}`;
+    return `${getApiBase(this.config)}${path}`;
   }
 
   /** All markets. Never key anything on the symbols in here — use `id`. */

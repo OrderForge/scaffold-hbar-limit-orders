@@ -29,7 +29,15 @@ yarn next:dev
 ```
 
 Open <http://localhost:3000/markets>. Market discovery, depth, the trade tape and quotes are **public**
-endpoints: no wallet, no API key, no deployed contract. _(coming: the markets pages themselves)_
+endpoints: no wallet, no API key, no deployed contract.
+
+Testnet markets are thin and often halted, so the terminal has a **Testnet / Mainnet** toggle for market
+data. Reading mainnet prices moves no funds; wallet actions stay on your wallet's own network.
+
+> **Why requests go through this app's own `/api/clob` route:** the Orderbook API sends no CORS headers,
+> so a browser cannot call it directly however public the endpoint is — it is built for server-side
+> clients. The app forwards the request from its server instead. The proxy holds no credentials. See
+> [docs/DISCREPANCIES.md](docs/DISCREPANCIES.md).
 
 ## What this is
 
@@ -57,8 +65,9 @@ template verifies the second part and is explicit about the first.
 
 | Piece | Where |
 | --- | --- |
-| Typed API client | `packages/nextjs/lib/clob/` _(coming)_ |
-| Mirror node reads | `packages/nextjs/lib/mirror/` _(coming)_ |
+| Typed API client | `packages/nextjs/lib/clob/` |
+| Same-origin API proxy | `packages/nextjs/app/api/clob/[network]/[...path]` |
+| Mirror node reads | `packages/nextjs/lib/mirror/` |
 | HCS journal | `packages/nextjs/lib/journal/` + a server route holding the operator key _(coming)_ |
 | Fill verification | `packages/nextjs/lib/verify/` _(coming)_ |
 | Scripts | `packages/hardhat/scripts/` — `clob:bootstrap`, `clob:fund`, `clob:status`, `clob:doctor` _(coming)_ |
@@ -66,7 +75,9 @@ template verifies the second part and is explicit about the first.
 ## Prerequisites
 
 - Node.js ≥ 20.18.3, Git
-- Yarn (default; required if you clone this repo) or npm if you scaffolded with the CLI
+- Yarn 3 — the repo pins it. If `yarn` is missing, enable Node's bundled Corepack once:
+  `corepack enable`. No global install and no sudo needed. If you would rather not touch
+  your global setup, the repo carries its own copy: `node .yarn/releases/yarn-3.2.3.cjs <command>`
 - A Hedera-compatible wallet for the on-chain steps — [MetaMask](https://metamask.io/) or
   [HashPack](https://www.hashpack.app/). Market data needs none.
 - [WalletConnect project ID](https://cloud.reown.com) in `packages/nextjs/.env` (a shared fallback works
@@ -79,9 +90,10 @@ Copy `packages/hardhat/.env.example` → `packages/hardhat/.env` and `packages/n
 
 | Variable | Used by | Purpose |
 | --- | --- | --- |
-| `NEXT_PUBLIC_CLOB_API_URL` | frontend | Orderbook API base URL — switches testnet/mainnet _(coming)_ |
-| `NEXT_PUBLIC_MIRROR_URL` | frontend | Hedera mirror node _(coming)_ |
-| `NEXT_PUBLIC_DEFAULT_ORDERBOOK_ID` | frontend | Market shown by default _(coming)_ |
+| `NEXT_PUBLIC_CLOB_NETWORK` | frontend | `testnet` (default) or `mainnet` |
+| `NEXT_PUBLIC_CLOB_API_URL` | frontend | Override the Orderbook API base, e.g. for a proxy |
+| `NEXT_PUBLIC_MIRROR_URL` | frontend | Hedera mirror node |
+| `NEXT_PUBLIC_DEFAULT_ORDERBOOK_ID` | frontend | Market shown by default |
 | `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` | frontend | WalletConnect project id |
 | `DEPLOYER_PRIVATE_KEY` | hardhat | Only for the on-chain scripts; never committed |
 
@@ -118,6 +130,7 @@ yarn next:build
 yarn next:check-types
 yarn hardhat:compile
 yarn hardhat:test
+yarn test:clob                  # unit tests, offline against captured fixtures
 yarn lint
 yarn format
 ```

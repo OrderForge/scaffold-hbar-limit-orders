@@ -68,6 +68,21 @@ export const getNetworkConfig = (network: ClobNetwork = getDefaultNetwork()): Cl
 /** Market shown when no id is given. */
 export const getDefaultOrderbookId = (): string => process.env.NEXT_PUBLIC_DEFAULT_ORDERBOOK_ID || "3";
 
+/**
+ * Same-origin path the browser calls instead of the API directly.
+ *
+ * The Orderbook API sends no CORS headers, so a browser cannot read it cross-origin even
+ * though the endpoints are public. `app/api/clob/[network]/[...path]` forwards the request
+ * from the server. Node callers (scripts, tests, the bot) skip the proxy entirely.
+ */
+export const CLOB_PROXY_PATH = "/api/clob";
+
+export const isBrowser = () => typeof window !== "undefined";
+
+/** Base URL to build requests from: the proxy in a browser, the API itself in Node. */
+export const getApiBase = (config: ClobNetworkConfig): string =>
+  isBrowser() ? `${CLOB_PROXY_PATH}/${config.network}` : config.apiUrl;
+
 /** The WebSocket origin for a network — both streams require a JWT. */
 export const getWsUrl = (config: ClobNetworkConfig, path: string): string =>
   `${config.apiUrl.replace(/^http/, "ws")}${path}`;

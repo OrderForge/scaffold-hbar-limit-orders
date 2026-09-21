@@ -176,3 +176,20 @@ describe("network configuration", () => {
     expect(fetchMock.mock.calls[0][0]).toBe("https://orderbook-api.saucerswap.finance/books");
   });
 });
+
+describe("browser vs server base URL", () => {
+  it("calls the API directly in Node", async () => {
+    fetchMock.mockImplementation(async () => json(books));
+    await new ClobClient({ network: "testnet" }).getBooks();
+    expect(fetchMock.mock.calls[0][0]).toBe("https://testnet-orderbook-api.saucerswap.finance/books");
+  });
+
+  it("calls the same-origin proxy in a browser", async () => {
+    // The Orderbook API sends no CORS headers, so a browser cannot read it cross-origin
+    // even though the endpoints are public. Requests go through the app's own route.
+    vi.stubGlobal("window", {} as Window & typeof globalThis);
+    fetchMock.mockImplementation(async () => json(books));
+    await new ClobClient({ network: "mainnet" }).getBooks();
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/clob/mainnet/books");
+  });
+});
