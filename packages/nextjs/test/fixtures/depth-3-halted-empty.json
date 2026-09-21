@@ -1,0 +1,12 @@
+{
+  "orderbookId": "3",
+  "timestamp": 1789930508196,
+  "baseTokenId": "0.0.1183558",
+  "quoteTokenId": "0.0.5449",
+  "bestBidQuote": null,
+  "bestAskQuote": null,
+  "spreadPercent": null,
+  "asks": [],
+  "bids": [],
+  "lastUpdateId": 3730688
+}

@@ -1,0 +1,120 @@
+/**
+ * Hedera mirror node reads.
+ *
+ * The mirror node is how this template checks the venue's claims: association state,
+ * balances, allowances and settlement logs all come from consensus data rather than from
+ * the Orderbook API's own view of the world.
+ */
+import { ClobNetwork, ClobNetworkConfig, getNetworkConfig } from "../clob/config";
+import { request, withQuery } from "../clob/http";
+
+export type TokenBalance = {
+  tokenId: string;
+  balance: string;
+  /** True when the token arrived through automatic association rather than an explicit tx. */
+  automaticAssociation: boolean;
+  decimals?: number;
+};
+
+export type MirrorAccount = {
+  accountId: string;
+  evmAddress: string | null;
+  balanceTinybars: string;
+  /** -1 means unlimited automatic associations, the default for EVM-created accounts. */
+  maxAutomaticTokenAssociations: number;
+  keyType: string | null;
+};
+
+const CACHE_MS = {
+  account: 5_000,
+  tokens: 10_000,
+  allowances: 10_000,
+  token: 300_000,
+} as const;
+
+export class MirrorClient {
+  readonly config: ClobNetworkConfig;
+
+  constructor(options: { network?: ClobNetwork; config?: ClobNetworkConfig } = {}) {
+    this.config = options.config ?? getNetworkConfig(options.network);
+  }
+
+  private url(path: string) {
+    return `${this.config.mirrorUrl}/api/v1${path}`;
+  }
+
+  /** Accepts a `0.0.x` id or an EVM address — the mirror node resolves both. */
+  async getAccount(accountIdOrEvm: string, signal?: AbortSignal): Promise<MirrorAccount | null> {
+    try {
+      const payload = await request<any>(this.url(`/accounts/${accountIdOrEvm}`), {
+        cacheMs: CACHE_MS.account,
+        signal,
+      });
+      return {
+        accountId: payload.account,
+        evmAddress: payload.evm_address ?? null,
+        balanceTinybars: String(payload.balance?.balance ?? "0"),
+        maxAutomaticTokenAssociations: payload.max_automatic_token_associations ?? 0,
+        keyType: payload.key?._type ?? null,
+      };
+    } catch {
+      // A brand-new account that has never received funds is simply not there yet.
+      return null;
+    }
+  }
+
+  /** Token balances for an account, optionally filtered to specific token ids. */
+  async getTokenBalances(accountId: string, tokenIds?: string[], signal?: AbortSignal): Promise<TokenBalance[]> {
+    const url = withQuery(this.url(`/accounts/${accountId}/tokens`), {
+      limit: 100,
+      "token.id": tokenIds?.length === 1 ? tokenIds[0] : undefined,
+    });
+    const payload = await request<any>(url, { cacheMs: CACHE_MS.tokens, signal });
+    const tokens: TokenBalance[] = (payload.tokens ?? []).map((token: any) => ({
+      tokenId: token.token_id,
+      balance: String(token.balance ?? "0"),
+      automaticAssociation: Boolean(token.automatic_association),
+      decimals: token.decimals !== undefined ? Number(token.decimals) : undefined,
+    }));
+    return tokenIds?.length ? tokens.filter(token => tokenIds.includes(token.tokenId)) : tokens;
+  }
+
+  /** HTS allowances granted by this account (the token → Permit2 step). */
+  async getTokenAllowances(
+    accountId: string,
+    signal?: AbortSignal,
+  ): Promise<{ tokenId: string; spender: string; amount: string }[]> {
+    const payload = await request<any>(
+      withQuery(this.url(`/accounts/${accountId}/allowances/tokens`), { limit: 100 }),
+      {
+        cacheMs: CACHE_MS.allowances,
+        signal,
+      },
+    );
+    return (payload.allowances ?? []).map((allowance: any) => ({
+      tokenId: allowance.token_id,
+      spender: String(allowance.spender),
+      amount: String(allowance.amount ?? "0"),
+    }));
+  }
+
+  /** Contract execution result with its logs — the basis for verifying a fill. */
+  async getContractResult(transactionHash: string, signal?: AbortSignal): Promise<any | null> {
+    try {
+      return await request<any>(this.url(`/contracts/results/${transactionHash}`), { cacheMs: CACHE_MS.token, signal });
+    } catch {
+      return null;
+    }
+  }
+}
+
+export const mirrorClient = (network?: ClobNetwork) => new MirrorClient({ network });
+
+/** Links to HashScan. Every on-chain action in this template shows one. */
+export const hashscan = (config: ClobNetworkConfig) => ({
+  transaction: (hashOrId: string) => `${config.hashscanUrl}/transaction/${hashOrId}`,
+  account: (accountId: string) => `${config.hashscanUrl}/account/${accountId}`,
+  token: (tokenId: string) => `${config.hashscanUrl}/token/${tokenId}`,
+  contract: (contractId: string) => `${config.hashscanUrl}/contract/${contractId}`,
+  topic: (topicId: string) => `${config.hashscanUrl}/topic/${topicId}`,
+});

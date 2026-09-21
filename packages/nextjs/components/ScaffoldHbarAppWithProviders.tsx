@@ -12,6 +12,7 @@ import { Footer } from "~~/components/Footer";
 import { Header } from "~~/components/Header";
 import { LocalChainErrorBanner } from "~~/components/LocalChainErrorBanner";
 import { BlockieAvatar } from "~~/components/scaffold-hbar";
+import { ClobNetworkProvider } from "~~/hooks/clob/useClobNetwork";
 import { wagmiConfig } from "~~/services/web3/wagmiConfig";
 
 const ScaffoldHbarApp = ({ children }: { children: React.ReactNode }) => {
@@ -74,7 +75,9 @@ export const ScaffoldHbarAppWithProviders = ({ children }: { children: React.Rea
       <QueryClientProvider client={queryClient}>
         <ProgressBar height="3px" color="#2299dd" />
         <RainbowKitProvider avatar={BlockieAvatar} coolMode initialChain={hederaTestnet} theme={rainbowKitTheme}>
-          <ScaffoldHbarApp>{children}</ScaffoldHbarApp>
+          <ClobNetworkProvider>
+            <ScaffoldHbarApp>{children}</ScaffoldHbarApp>
+          </ClobNetworkProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>

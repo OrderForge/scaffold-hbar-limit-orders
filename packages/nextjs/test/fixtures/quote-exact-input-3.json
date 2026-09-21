@@ -1,0 +1,9 @@
+{
+  "outputToken": "0x0000000000000000000000000000000000001549",
+  "snappedInputAmount": "100000000",
+  "consumedInputAmount": "100000000",
+  "expectedOutputAmount": "4244240",
+  "suggestedOutputAmount": "4032020",
+  "slippageBps": 500,
+  "fillable": true
+}

@@ -27,9 +27,10 @@
     "hardhat:test": "yarn workspace @sh/hardhat test",
     "hardhat:test:forking": "yarn workspace @sh/hardhat test:forking",
     "hardhat:verify": "yarn workspace @sh/hardhat verify",
-    "hardhat:verify:testnet": "yarn workspace @sh/hardhat verify:testnet",
     "hardhat:verify:mainnet": "yarn workspace @sh/hardhat verify:mainnet",
+    "hardhat:verify:testnet": "yarn workspace @sh/hardhat verify:testnet",
     "lint": "yarn next:lint && yarn hardhat:lint",
+    "lint-staged": "lint-staged",
     "next:build": "yarn workspace @sh/nextjs build",
     "next:check-types": "yarn workspace @sh/nextjs check-types",
     "next:dev": "yarn workspace @sh/nextjs dev",
@@ -39,7 +40,7 @@
     "next:start": "yarn workspace @sh/nextjs start",
     "postinstall": "husky",
     "precommit": "lint-staged",
-    "lint-staged": "lint-staged"
+    "test:clob": "yarn workspace @sh/nextjs test:clob"
   },
   "packageManager": "yarn@3.2.3",
   "devDependencies": {

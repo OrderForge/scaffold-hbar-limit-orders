@@ -1,0 +1,13 @@
+{
+  "request": "GET /books/3/quote/exact-input?inputToken=0x..120f46&inputAmount=100000000 (halted, empty book)",
+  "body": {
+    "outputToken": "0x0000000000000000000000000000000000001549",
+    "snappedInputAmount": "100000000",
+    "consumedInputAmount": "0",
+    "expectedOutputAmount": "0",
+    "suggestedOutputAmount": "1",
+    "slippageBps": 500,
+    "fillable": false
+  },
+  "_note": "DANGER: with no liquidity the quote returns suggestedOutputAmount \"1\" \u2014 the exact value the docs warn never to sign (it removes all price protection). Client MUST refuse to build when fillable === false."
+}

@@ -1,0 +1,152 @@
+{
+  "_note": "15s of /ws/depth?books=3 on testnet 2026-09-19. Binance-style diffs; size \"0\" removes the level.",
+  "messages": [
+    {
+      "orderbookId": "3",
+      "firstUpdateId": 3706528,
+      "finalUpdateId": 3706528,
+      "timestamp": 1789831850639,
+      "asks": [["0.0424083", "510"]],
+      "bids": []
+    },
+    {
+      "orderbookId": "3",
+      "firstUpdateId": 3706529,
+      "finalUpdateId": 3706529,
+      "timestamp": 1789831852505,
+      "asks": [["0.0424083", "0"]],
+      "bids": []
+    },
+    {
+      "orderbookId": "3",
+      "firstUpdateId": 3706530,
+      "finalUpdateId": 3706530,
+      "timestamp": 1789831852542,
+      "asks": [],
+      "bids": [
+        ["0.0428617", "0"],
+        ["0.0428588", "360"]
+      ]
+    },
+    {
+      "orderbookId": "3",
+      "firstUpdateId": 3706531,
+      "finalUpdateId": 3706531,
+      "timestamp": 1789831855932,
+      "asks": [["0.0429435", "320"]],
+      "bids": []
+    },
+    {
+      "orderbookId": "3",
+      "firstUpdateId": 3706532,
+      "finalUpdateId": 3706532,
+      "timestamp": 1789831856130,
+      "asks": [],
+      "bids": [["0.0434454", "320"]]
+    },
+    {
+      "orderbookId": "3",
+      "firstUpdateId": 3706533,
+      "finalUpdateId": 3706533,
+      "timestamp": 1789831857992,
+      "asks": [],
+      "bids": [["0.0434454", "3.696778"]]
+    },
+    {
+      "orderbookId": "3",
+      "firstUpdateId": 3706534,
+      "finalUpdateId": 3706534,
+      "timestamp": 1789831858039,
+      "asks": [["0.0429435", "0"]],
+      "bids": []
+    },
+    {
+      "orderbookId": "3",
+      "firstUpdateId": 3706535,
+      "finalUpdateId": 3706535,
+      "timestamp": 1789831858070,
+      "asks": [],
+      "bids": [["0.0434454", "0"]]
+    },
+    {
+      "orderbookId": "3",
+      "firstUpdateId": 3706536,
+      "finalUpdateId": 3706536,
+      "timestamp": 1789831858806,
+      "asks": [["0.0429433", "830"]],
+      "bids": []
+    },
+    {
+      "orderbookId": "3",
+      "firstUpdateId": 3706537,
+      "finalUpdateId": 3706537,
+      "timestamp": 1789831858989,
+      "asks": [],
+      "bids": [["0.0434109", "830"]]
+    },
+    {
+      "orderbookId": "3",
+      "firstUpdateId": 3706538,
+      "finalUpdateId": 3706538,
+      "timestamp": 1789831861180,
+      "asks": [],
+      "bids": [["0.0434109", "8.940335"]]
+    },
+    {
+      "orderbookId": "3",
+      "firstUpdateId": 3706539,
+      "finalUpdateId": 3706539,
+      "timestamp": 1789831861205,
+      "asks": [["0.0429433", "0"]],
+      "bids": []
+    },
+    {
+      "orderbookId": "3",
+      "firstUpdateId": 3706540,
+      "finalUpdateId": 3706540,
+      "timestamp": 1789831861232,
+      "asks": [],
+      "bids": [["0.0434109", "0"]]
+    },
+    {
+      "orderbookId": "3",
+      "firstUpdateId": 3706541,
+      "finalUpdateId": 3706541,
+      "timestamp": 1789831862018,
+      "asks": [["0.0429434", "370"]],
+      "bids": []
+    },
+    {
+      "orderbookId": "3",
+      "firstUpdateId": 3706542,
+      "finalUpdateId": 3706542,
+      "timestamp": 1789831862341,
+      "asks": [],
+      "bids": [["0.0434582", "370"]]
+    },
+    {
+      "orderbookId": "3",
+      "firstUpdateId": 3706543,
+      "finalUpdateId": 3706543,
+      "timestamp": 1789831864224,
+      "asks": [],
+      "bids": [["0.0434582", "4.38297"]]
+    },
+    {
+      "orderbookId": "3",
+      "firstUpdateId": 3706544,
+      "finalUpdateId": 3706544,
+      "timestamp": 1789831864251,
+      "asks": [["0.0429434", "0"]],
+      "bids": []
+    },
+    {
+      "orderbookId": "3",
+      "firstUpdateId": 3706545,
+      "finalUpdateId": 3706545,
+      "timestamp": 1789831864279,
+      "asks": [],
+      "bids": [["0.0434582", "0"]]
+    }
+  ]
+}

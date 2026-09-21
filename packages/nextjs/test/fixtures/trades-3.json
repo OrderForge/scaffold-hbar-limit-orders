@@ -1,0 +1,149 @@
+{
+  "orderbookId": "3",
+  "timestamp": 1789830747056,
+  "trades": [
+    {
+      "timestamp": 1789830744000,
+      "price": "0.0429424",
+      "amountBase": "690",
+      "direction": "sell",
+      "transactionHash": "0xa7a85d323f96c6e8a1deed0df59101df2c0adf90adfb4d972183e1a17ccfec0c"
+    },
+    {
+      "timestamp": 1789830741000,
+      "price": "0.0429411",
+      "amountBase": "430",
+      "direction": "sell",
+      "transactionHash": "0x64bbe4d156b49a060b697fdb94a754327b42bf33366d90fe2ee80de866617c88"
+    },
+    {
+      "timestamp": 1789830738000,
+      "price": "0.04294",
+      "amountBase": "740",
+      "direction": "sell",
+      "transactionHash": "0xbf3444a8bdcbb1fc456b600094b2d9b0b8809bbf699fd6b582a08969ccf96251"
+    },
+    {
+      "timestamp": 1789830733000,
+      "price": "0.0429385",
+      "amountBase": "830",
+      "direction": "sell",
+      "transactionHash": "0xdfe0155c6bee5932124f234e00f10aaf8625c41c755dcfee835c852c814eb606"
+    },
+    {
+      "timestamp": 1789830729000,
+      "price": "0.0430235",
+      "amountBase": "800",
+      "direction": "buy",
+      "transactionHash": "0xb5c1d974b252e699c951a37e1bc3cb13bb67f8690093f3452e8629d3256d2871"
+    },
+    {
+      "timestamp": 1789830726000,
+      "price": "0.0429371",
+      "amountBase": "650",
+      "direction": "sell",
+      "transactionHash": "0x41d5c811ff7ecec901ac6dcf6db44559113353af2a2dc0906f28295defe7800d"
+    },
+    {
+      "timestamp": 1789830723000,
+      "price": "0.0430229",
+      "amountBase": "680",
+      "direction": "buy",
+      "transactionHash": "0x8fbb4d568121a97e782fc12a1a088e0a8955df6875576b3c22bc04f03a8d57d7"
+    },
+    {
+      "timestamp": 1789830720000,
+      "price": "0.0430231",
+      "amountBase": "560",
+      "direction": "buy",
+      "transactionHash": "0xac63f1aea17bd197dfed774a2d10657d30ef3e949076b88965c95394bcff1406"
+    },
+    {
+      "timestamp": 1789830717000,
+      "price": "0.0430238",
+      "amountBase": "780",
+      "direction": "buy",
+      "transactionHash": "0x8d8b71bfba545c27728ed80abf16fb8f7c9ce58da36a316ac20a3a0865f7acef"
+    },
+    {
+      "timestamp": 1789830714000,
+      "price": "0.0429387",
+      "amountBase": "710",
+      "direction": "sell",
+      "transactionHash": "0xd7e042dc99493c8aa15f960795bebb1d8b66f1cc5efeeca04189b2959cb0b9cd"
+    },
+    {
+      "timestamp": 1789830709000,
+      "price": "0.0430268",
+      "amountBase": "760",
+      "direction": "buy",
+      "transactionHash": "0x116b103e13e15d268bbce024cc44c632dcc990214c16f86880118ae555fe2baf"
+    },
+    {
+      "timestamp": 1789830703000,
+      "price": "0.0429439",
+      "amountBase": "730",
+      "direction": "sell",
+      "transactionHash": "0xe462441889fd62463d31f6f0a18b13699c41790f7bc29b6e95980d6c0efb66d7"
+    },
+    {
+      "timestamp": 1789830699000,
+      "price": "0.0430327",
+      "amountBase": "320",
+      "direction": "buy",
+      "transactionHash": "0x085e7ef2be5497edc81ed100d95943fa970de2368f2bc77506c5d1525d600ea8"
+    },
+    {
+      "timestamp": 1789830694000,
+      "price": "0.0430365",
+      "amountBase": "780",
+      "direction": "buy",
+      "transactionHash": "0x91a946d015876ef8a3cab6d13ff86a63873513b44dc0577e6111ea9da7e00846"
+    },
+    {
+      "timestamp": 1789830690000,
+      "price": "0.0430404",
+      "amountBase": "430",
+      "direction": "buy",
+      "transactionHash": "0x3e28ff65ffa92835354bee5e9b6da9dcbe3a0ff89a1e9d47492b5ec620b1d829"
+    },
+    {
+      "timestamp": 1789830687000,
+      "price": "0.0429574",
+      "amountBase": "410",
+      "direction": "sell",
+      "transactionHash": "0x3f45bb39671ff5dde058b13547a6a33f45f2ff914af3a7cba4ad263b3e7de64f"
+    },
+    {
+      "timestamp": 1789830682000,
+      "price": "0.0429633",
+      "amountBase": "330",
+      "direction": "sell",
+      "transactionHash": "0x1f84dc60efb89c22c285c61168920766a9691713dd3ba149914ca099333e895d"
+    },
+    {
+      "timestamp": 1789830677000,
+      "price": "0.0430537",
+      "amountBase": "810",
+      "direction": "buy",
+      "transactionHash": "0xba4170bf1ba9c37aab5bd9fa27d763a70c552c148bb8dbacf2cbf257f31498d1"
+    },
+    {
+      "timestamp": 1789830673000,
+      "price": "0.0429742",
+      "amountBase": "530",
+      "direction": "sell",
+      "transactionHash": "0x29def9849aac8bf8f012152438b8ee9e5749906376192577c215edb9c0ed0948"
+    },
+    {
+      "timestamp": 1789830669000,
+      "price": "0.0429794",
+      "amountBase": "290",
+      "direction": "sell",
+      "transactionHash": "0xdf4321b54ce7dfcf63718432fe19e95a82c04fea2bd63b71dbdf86398037100f"
+    }
+  ],
+  "total": 100,
+  "page": 1,
+  "limit": 20
+}
