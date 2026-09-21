@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { DepthLadder, SpreadReadout } from "~~/components/clob/DepthLadder";
 import { AmmBadge, LiveIndicator, MarketStateBadge } from "~~/components/clob/MarketBadges";
 import { NetworkToggle, SwitchToMainnetHint } from "~~/components/clob/NetworkToggle";
+import { OnboardingChecklist } from "~~/components/clob/OnboardingChecklist";
 import { TradeTape } from "~~/components/clob/TradeTape";
 import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
 import { useChangedLevels, useSecondsSince } from "~~/hooks/clob/useFreshness";
@@ -223,6 +224,7 @@ const MarketPage = () => {
         </div>
 
         <div className="flex flex-col gap-4">
+          <OnboardingChecklist market={book} />
           <MetadataPanel book={book} />
           <div className="rounded-box border border-dashed border-base-300 p-4 text-sm opacity-70">
             <p className="font-medium">Order entry arrives next</p>

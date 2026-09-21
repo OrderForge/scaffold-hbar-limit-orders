@@ -121,14 +121,14 @@ export const useScaffoldEventHistory = <
 
   const isContractAddressAndClientReady = Boolean(deployedContractData?.address) && Boolean(publicClient);
 
-  const fromBlockValue =
-    fromBlock !== undefined
-      ? fromBlock
-      : BigInt(
-          deployedContractData && "deployedOnBlock" in deployedContractData
-            ? deployedContractData.deployedOnBlock || 0
-            : 0,
-        );
+  // External contracts (the SaucerSwap reactor, Permit2) carry no `deployedOnBlock`, so the
+  // property widens to `{}` across the union. Narrow it before converting.
+  const deployedOnBlock =
+    deployedContractData && "deployedOnBlock" in deployedContractData
+      ? (deployedContractData.deployedOnBlock as number | bigint | undefined)
+      : undefined;
+
+  const fromBlockValue = fromBlock !== undefined ? fromBlock : BigInt(deployedOnBlock ?? 0);
 
   const query = useInfiniteQuery({
     queryKey: [

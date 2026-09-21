@@ -1,0 +1,20 @@
+{
+  "steps": {
+    "associateBaseToken": true,
+    "associateQuoteToken": true,
+    "approveBaseTokenPermit2": true,
+    "approveQuoteTokenPermit2": true,
+    "approveBaseTokenReactor": true,
+    "approveQuoteTokenReactor": true
+  },
+  "pendingSteps": [],
+  "completedSteps": [
+    "associateBaseToken",
+    "associateQuoteToken",
+    "approveBaseTokenPermit2",
+    "approveQuoteTokenPermit2",
+    "approveBaseTokenReactor",
+    "approveQuoteTokenReactor"
+  ],
+  "isComplete": true
+}

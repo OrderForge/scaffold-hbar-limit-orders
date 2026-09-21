@@ -18,6 +18,13 @@ export type ClobNetworkConfig = {
   hashscanUrl: string;
   /** EVM chain id: 296 testnet, 295 mainnet. */
   chainId: number;
+  /**
+   * Settlement contracts, read from the chain rather than guessed:
+   * `reactor` is the `verifyingContract` of `GET /signature/domain`, and `permit2` is
+   * `reactor.permit2()`. `clob:doctor` re-checks both against the live API.
+   */
+  reactor: `0x${string}`;
+  permit2: `0x${string}`;
 };
 
 export const CLOB_NETWORKS: Record<ClobNetwork, ClobNetworkConfig> = {
@@ -27,6 +34,8 @@ export const CLOB_NETWORKS: Record<ClobNetwork, ClobNetworkConfig> = {
     mirrorUrl: "https://testnet.mirrornode.hedera.com",
     hashscanUrl: "https://hashscan.io/testnet",
     chainId: 296,
+    reactor: "0x5707B946EE64bD750A587261Ce36ec7024F3088B",
+    permit2: "0x2e2C4f4277183F2BC5eb982CD4cD27C1fb01c6Ed",
   },
   mainnet: {
     network: "mainnet",
@@ -34,6 +43,8 @@ export const CLOB_NETWORKS: Record<ClobNetwork, ClobNetworkConfig> = {
     mirrorUrl: "https://mainnet.mirrornode.hedera.com",
     hashscanUrl: "https://hashscan.io/mainnet",
     chainId: 295,
+    reactor: "0xa2c2713E82B47DCB3B0bae75199C81fcd185b86C",
+    permit2: "0x8D53a86b10b503f284A0EA9e8316bc6081432A96",
   },
 };
 
