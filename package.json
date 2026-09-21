@@ -9,6 +9,9 @@
     ]
   },
   "scripts": {
+    "clob:bootstrap": "yarn workspace @sh/hardhat clob:bootstrap",
+    "clob:fund": "yarn workspace @sh/hardhat clob:fund",
+    "clob:status": "yarn workspace @sh/hardhat clob:status",
     "format": "yarn next:format && yarn hardhat:format",
     "hardhat:account": "yarn workspace @sh/hardhat account",
     "hardhat:account:generate": "yarn workspace @sh/hardhat account:generate",

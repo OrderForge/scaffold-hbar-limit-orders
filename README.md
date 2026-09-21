@@ -68,9 +68,34 @@ template verifies the second part and is explicit about the first.
 | Typed API client | `packages/nextjs/lib/clob/` |
 | Same-origin API proxy | `packages/nextjs/app/api/clob/[network]/[...path]` |
 | Mirror node reads | `packages/nextjs/lib/mirror/` |
-| HCS journal | `packages/nextjs/lib/journal/` + a server route holding the operator key _(coming)_ |
+| Onboarding checks | `packages/nextjs/lib/hedera/onboarding.ts` |
+| HCS journal | `packages/nextjs/lib/journal/` + `app/api/journal` (the only place holding a Hedera key) |
 | Fill verification | `packages/nextjs/lib/verify/` _(coming)_ |
-| Scripts | `packages/hardhat/scripts/` — `clob:bootstrap`, `clob:fund`, `clob:status`, `clob:doctor` _(coming)_ |
+| Scripts | `packages/hardhat/scripts/` — `clob:bootstrap`, `clob:fund`, `clob:status`; `clob:doctor` _(coming)_ |
+
+## Full setup (for the on-chain half)
+
+```bash
+yarn hardhat:account:generate        # or bring your own ECDSA key
+# fund it at https://portal.hedera.com/faucet, then:
+cp packages/hardhat/.env.example packages/hardhat/.env    # add HEDERA_OPERATOR_ID / _KEY
+yarn clob:bootstrap                  # creates the HCS journal topic, prints its id
+# copy the printed JOURNAL_TOPIC_ID lines into packages/nextjs/.env
+yarn clob:fund                       # swaps a little HBAR into the market's two tokens
+yarn clob:status                     # verifies all of the above, says what is left
+```
+
+Then open a market page: the **ready-to-trade** checklist shows the six on-chain steps, each with a
+HashScan link, and **sign an intent (dry run)** signs an order in your wallet and writes it to the
+journal without sending it anywhere.
+
+### Verified live on testnet
+
+| What | Evidence |
+| --- | --- |
+| HCS journal topic | [`0.0.10646020`](https://hashscan.io/testnet/topic/0.0.10646020) |
+| Permit2 onboarding (4 transactions) | [SAUCE→Permit2](https://hashscan.io/testnet/transaction/0x490de469a1d0f08a825a80a79c8c6b12a9ca840939ea6f7239831fdffda37083), [Permit2→reactor](https://hashscan.io/testnet/transaction/0x0e9462293d2374b80222f2dba26b6868a538899cb34d5682e5ca49135de2379d), [USDC→Permit2](https://hashscan.io/testnet/transaction/0xdfa33dfdba54534f33d37987224a4ad6d89b9db4f1e1a729c99e2148f031a512), [Permit2→reactor](https://hashscan.io/testnet/transaction/0x488f4b370b19eaf740be8f7293cf35cd06f38bd0ccb4ca3a52f0d815f6d8c994) |
+| Order placed and cancelled | order 3494124 on book 3, 2026-09-19 |
 
 ## Prerequisites
 
@@ -95,6 +120,9 @@ Copy `packages/hardhat/.env.example` → `packages/hardhat/.env` and `packages/n
 | `NEXT_PUBLIC_MIRROR_URL` | frontend | Hedera mirror node |
 | `NEXT_PUBLIC_DEFAULT_ORDERBOOK_ID` | frontend | Market shown by default |
 | `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` | frontend | WalletConnect project id |
+| `NEXT_PUBLIC_JOURNAL_TOPIC_ID` | frontend | HCS topic the journal reads |
+| `JOURNAL_TOPIC_ID` | server | HCS topic the journal writes to |
+| `HEDERA_OPERATOR_ID` / `HEDERA_OPERATOR_KEY` | server | Pays for journal messages. **Never** prefix the key with `NEXT_PUBLIC_` |
 | `DEPLOYER_PRIVATE_KEY` | hardhat | Only for the on-chain scripts; never committed |
 
 ## Wallet setup (only needed for on-chain steps)
@@ -133,6 +161,10 @@ yarn hardhat:test
 yarn test:clob                  # unit tests, offline against captured fixtures
 yarn lint
 yarn format
+
+yarn clob:bootstrap             # create the HCS journal topic (idempotent)
+yarn clob:status                # check API, contracts, operator and journal
+yarn clob:fund --hbar 20        # swap HBAR into a market's tokens
 ```
 
 ## Project structure

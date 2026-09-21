@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { DepthLadder, SpreadReadout } from "~~/components/clob/DepthLadder";
+import { DryRunSign } from "~~/components/clob/DryRunSign";
 import { AmmBadge, LiveIndicator, MarketStateBadge } from "~~/components/clob/MarketBadges";
 import { NetworkToggle, SwitchToMainnetHint } from "~~/components/clob/NetworkToggle";
 import { OnboardingChecklist } from "~~/components/clob/OnboardingChecklist";
@@ -225,11 +226,13 @@ const MarketPage = () => {
 
         <div className="flex flex-col gap-4">
           <OnboardingChecklist market={book} />
+          <DryRunSign market={book} />
           <MetadataPanel book={book} />
           <div className="rounded-box border border-dashed border-base-300 p-4 text-sm opacity-70">
-            <p className="font-medium">Order entry arrives next</p>
+            <p className="font-medium">Order submission arrives next</p>
             <p className="mt-1">
-              Onboarding, signing and cancellation land in the following increments. Market data here needs no wallet.
+              Signing and journalling work today. Sending the signed order to SaucerSwap, and cancelling it, land in the
+              next increment.
             </p>
           </div>
         </div>
