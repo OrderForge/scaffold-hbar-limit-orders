@@ -3,12 +3,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
 import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
+import { getJournalNetwork, getNetworkConfig } from "~~/lib/clob/config";
 import { JournalEntry, consensusToDate, getJournalTopicId, listIntents } from "~~/lib/journal";
 import { hashscan } from "~~/lib/mirror/client";
 
 const Row = ({ entry }: { entry: JournalEntry }) => {
-  const { config } = useClobNetwork();
-  const links = hashscan(config);
+  const links = hashscan(getNetworkConfig(getJournalNetwork()));
   const { intent } = entry;
 
   return (
@@ -50,9 +50,13 @@ const Row = ({ entry }: { entry: JournalEntry }) => {
 };
 
 const JournalPage = () => {
-  const { config, network } = useClobNetwork();
+  const { network: viewedNetwork } = useClobNetwork();
   const { address } = useAccount();
   const topicId = getJournalTopicId();
+
+  // The topic exists on one network only, so the journal ignores the market-data toggle.
+  const network = getJournalNetwork();
+  const config = getNetworkConfig(network);
 
   const { data: entries, isLoading } = useQuery({
     queryKey: ["journal", network, topicId, address],
@@ -92,6 +96,12 @@ const JournalPage = () => {
             {topicId}
           </a>{" "}
           on {network}. The topic is public: anyone can read this without the app.
+          {viewedNetwork !== network && (
+            <span className="ml-1">
+              You are viewing {viewedNetwork} market data; a journal topic belongs to one network, so this stays on{" "}
+              {network}.
+            </span>
+          )}
         </p>
       )}
 

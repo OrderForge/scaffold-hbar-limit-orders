@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
+import { getJournalNetwork, getNetworkConfig } from "~~/lib/clob/config";
 import { orderAmounts } from "~~/lib/clob/orders";
 import { AccountOrder, OrderEvent, Orderbook } from "~~/lib/clob/types";
 import { JournalEntry, listIntents } from "~~/lib/journal";
@@ -85,7 +86,7 @@ export const FillChecks = ({
 
   const { data: journal } = useQuery({
     queryKey: ["journal", network, "for-order", order.nonce],
-    queryFn: ({ signal }) => listIntents(config, { signal }),
+    queryFn: ({ signal }) => listIntents(getNetworkConfig(getJournalNetwork()), { signal }),
     staleTime: 30_000,
   });
 

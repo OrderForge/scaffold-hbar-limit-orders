@@ -76,6 +76,16 @@ export const getNetworkConfig = (network: ClobNetwork = getDefaultNetwork()): Cl
   };
 };
 
+/**
+ * The network the HCS journal topic lives on.
+ *
+ * A topic id exists on exactly one network, so the journal does not follow the market-data
+ * toggle: reading mainnet prices does not move the journal to mainnet. `yarn clob:bootstrap`
+ * prints the topic and the network it created it on.
+ */
+export const getJournalNetwork = (): ClobNetwork =>
+  process.env.NEXT_PUBLIC_JOURNAL_NETWORK === "mainnet" ? "mainnet" : "testnet";
+
 /** Market shown when no id is given. */
 export const getDefaultOrderbookId = (): string => process.env.NEXT_PUBLIC_DEFAULT_ORDERBOOK_ID || "3";
 

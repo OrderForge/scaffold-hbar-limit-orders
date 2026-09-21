@@ -100,6 +100,7 @@ const main = async () => {
     console.log("\nAdd these to packages/nextjs/.env so the app can write and read the journal:");
     console.log(`  JOURNAL_TOPIC_ID=${topicId}`);
     console.log(`  NEXT_PUBLIC_JOURNAL_TOPIC_ID=${topicId}`);
+    console.log(`  NEXT_PUBLIC_JOURNAL_NETWORK=${NETWORK}`);
     console.log("  HEDERA_OPERATOR_ID=…      # same account as here");
     console.log("  HEDERA_OPERATOR_KEY=…     # server-side only, never NEXT_PUBLIC_");
     console.log("\nThen run `yarn clob:status` to verify.");

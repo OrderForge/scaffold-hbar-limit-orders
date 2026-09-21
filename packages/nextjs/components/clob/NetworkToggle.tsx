@@ -1,21 +1,49 @@
 "use client";
 
+import { useAccount, useSwitchChain } from "wagmi";
 import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
-import { ClobNetwork } from "~~/lib/clob/config";
+import { CLOB_NETWORKS, ClobNetwork } from "~~/lib/clob/config";
 
 const LABELS: Record<ClobNetwork, string> = { testnet: "Testnet", mainnet: "Mainnet" };
 
 /**
- * Switches which network the **market data** is read from.
+ * Which network the terminal is reading.
  *
- * With no wallet connected this is free: both networks serve public data, and testnet
- * markets are often closed or halted, so being able to look at mainnet keeps the terminal
- * useful. Once a wallet is connected the two are kept in step — the toggle follows the
- * wallet, and deliberately reading the other network marks everything wallet-related
- * read-only rather than letting someone approve a token on the chain they are not viewing.
+ * With a wallet connected there is **one** network control in this app, and it lives in the
+ * header: the chain the wallet is on decides what is read, because that is the chain any
+ * approval or signature would land on. This just reports that state.
+ *
+ * With no wallet there is nothing to follow, so the reader picks. That matters because
+ * testnet markets are often closed or halted and both networks serve public data.
  */
 export const NetworkToggle = () => {
+  const { isConnected } = useAccount();
   const { network, setNetwork, isReadOnlyNetwork, walletNetwork } = useClobNetwork();
+
+  if (isConnected) {
+    if (isReadOnlyNetwork) {
+      return (
+        <div className="flex items-center gap-2 text-xs">
+          <span className="badge badge-warning badge-sm" title={`Your wallet is on ${walletNetwork}`}>
+            reading {LABELS[network]} · read-only
+          </span>
+          <button
+            type="button"
+            className="btn btn-ghost btn-xs"
+            onClick={() => walletNetwork && setNetwork(walletNetwork)}
+          >
+            follow my wallet
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <span className="text-xs opacity-60" title="Switch networks from the wallet menu in the header">
+        reading {LABELS[network]} · follows your wallet
+      </span>
+    );
+  }
 
   return (
     <div className="flex items-center gap-2">
@@ -32,29 +60,20 @@ export const NetworkToggle = () => {
           </button>
         ))}
       </div>
-      {isReadOnlyNetwork && (
-        <span
-          className="badge badge-sm badge-warning"
-          title={`Your wallet is on ${walletNetwork}. Trading is disabled while you read a different network.`}
-        >
-          read-only
-        </span>
-      )}
-      {!isReadOnlyNetwork && walletNetwork === network && (
-        <span className="badge badge-sm badge-ghost" title="Your wallet is on the network you are reading">
-          wallet
-        </span>
-      )}
+      <span className="text-xs opacity-50">market data</span>
     </div>
   );
 };
 
 /**
  * Offered when the selected market has nothing to show. A dead testnet market is a normal
- * thing for a trading client to survive, so we say so and offer the alternative.
+ * thing for a trading client to survive, so say so and offer the alternative.
  */
 export const SwitchToMainnetHint = ({ reason }: { reason: string }) => {
+  const { isConnected } = useAccount();
   const { network, setNetwork } = useClobNetwork();
+  const { switchChain, isPending } = useSwitchChain();
+
   if (network === "mainnet") return null;
 
   return (
@@ -66,8 +85,17 @@ export const SwitchToMainnetHint = ({ reason }: { reason: string }) => {
           funds.
         </p>
       </div>
-      <button type="button" className="btn btn-sm" onClick={() => setNetwork("mainnet")}>
-        Read mainnet instead
+      <button
+        type="button"
+        className="btn btn-sm"
+        disabled={isPending}
+        onClick={() => {
+          // With a wallet connected, move the wallet too so the two never drift apart.
+          if (isConnected) switchChain({ chainId: CLOB_NETWORKS.mainnet.chainId });
+          else setNetwork("mainnet");
+        }}
+      >
+        {isConnected ? "Switch my wallet to mainnet" : "Read mainnet instead"}
       </button>
     </div>
   );
