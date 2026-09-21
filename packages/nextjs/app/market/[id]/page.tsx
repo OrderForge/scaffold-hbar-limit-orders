@@ -7,6 +7,7 @@ import { AmmBadge, LiveIndicator, MarketStateBadge } from "~~/components/clob/Ma
 import { NetworkToggle, SwitchToMainnetHint } from "~~/components/clob/NetworkToggle";
 import { TradeTape } from "~~/components/clob/TradeTape";
 import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
+import { useChangedLevels, useSecondsSince } from "~~/hooks/clob/useFreshness";
 import { useBook, useDepth, useIsTabVisible, useTrades } from "~~/hooks/clob/useMarketData";
 import { PublicReadUnavailableError } from "~~/lib/clob/errors";
 import { formatPercent, pipsToPercentLabel } from "~~/lib/clob/format";
@@ -37,6 +38,7 @@ const MetadataPanel = ({ book }: { book: Orderbook }) => {
         {book.quoteTokenId} ({book.quoteTokenDecimals} dp)
       </a>,
     ],
+    ["AMM routing", book.isAMMEnabled === 1 ? "On" : "Off"],
     ["24h high / low", `${book.quotePrice24hHigh ?? "—"} / ${book.quotePrice24hLow ?? "—"}`],
     ["24h volume (quote)", book.quoteVol24h ?? "—"],
     ["Last updated", book.updatedAt ? new Date(book.updatedAt).toLocaleString() : "—"],
@@ -57,6 +59,37 @@ const MetadataPanel = ({ book }: { book: Orderbook }) => {
         Orders must sit on the tick grid, be a whole number of lots, and clear the minimum notional. The template checks
         all three before asking for a signature.
       </p>
+      {book.isAMMEnabled === 1 && (
+        <p className="mt-2 text-xs opacity-60">
+          <span className="font-medium">AMM routing is on.</span> SaucerSwap blends liquidity from its AMM pool into
+          this book, so the depth above mixes resting limit orders with pool quotes, and an order can settle against
+          either. It is also the likely reason a book can appear crossed. Orders may opt out of AMM settlement
+          individually.
+        </p>
+      )}
+    </div>
+  );
+};
+
+/**
+ * How fresh the data is, and the book's own sequence number.
+ *
+ * A thin market can hold the same best bid and ask for minutes. Without these, a working
+ * feed looks frozen — the sequence number advances even when no price moves.
+ */
+const Freshness = ({ updatedAt, live, sequence }: { updatedAt?: number; live: boolean; sequence?: number }) => {
+  const age = useSecondsSince(updatedAt);
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      <LiveIndicator live={live} label={age === null ? "live" : `updated ${age.toFixed(1)}s ago`} />
+      {sequence !== undefined && (
+        <span
+          className="font-mono opacity-50"
+          title="The book's update sequence. It advances whenever the book changes, even if no price moves."
+        >
+          seq {sequence}
+        </span>
+      )}
     </div>
   );
 };
@@ -69,8 +102,9 @@ const MarketPage = () => {
 
   const { data: book, isLoading: bookLoading, error: bookError } = useBook(orderbookId);
   const tradeable = book ? marketState(book) !== "CLOSED" : false;
-  const { data: depthResult, error: depthError } = useDepth(orderbookId, Boolean(book) && tradeable);
+  const { data: depthResult, error: depthError, dataUpdatedAt } = useDepth(orderbookId, Boolean(book) && tradeable);
   const { data: trades } = useTrades(orderbookId, 25, Boolean(book) && tradeable);
+  const changes = useChangedLevels(depthResult?.depth ?? null);
 
   if (bookLoading) {
     return (
@@ -131,7 +165,7 @@ const MarketPage = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <LiveIndicator live={visible} label="polling 2s" />
+          <Freshness updatedAt={dataUpdatedAt} live={visible} sequence={depth?.lastUpdateId} />
           <NetworkToggle />
         </div>
       </div>
@@ -166,7 +200,7 @@ const MarketPage = () => {
             </div>
 
             {depth ? (
-              <DepthLadder depth={depth} market={book} />
+              <DepthLadder depth={depth} market={book} changes={changes} />
             ) : (
               <p className="p-8 text-center text-sm opacity-60">
                 {state === "CLOSED" ? "Closed markets serve no depth." : "Loading depth…"}

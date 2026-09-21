@@ -1,6 +1,7 @@
 "use client";
 
 import { CrossedBadge } from "./MarketBadges";
+import { LevelChange } from "~~/hooks/clob/useFreshness";
 import { BookLevel, NormalizedDepth } from "~~/lib/clob/depth";
 import { formatUnits, parseDecimal, stepDecimals } from "~~/lib/clob/format";
 import { Orderbook } from "~~/lib/clob/types";
@@ -17,8 +18,25 @@ const atStep = (value: string, step: string, fallbackDigits = 2) => {
   }
 };
 
-const LadderRow = ({ level, side, market }: { level: BookLevel; side: "bid" | "ask"; market: Orderbook }) => (
-  <tr className="relative">
+const LadderRow = ({
+  level,
+  side,
+  market,
+  change,
+}: {
+  level: BookLevel;
+  side: "bid" | "ask";
+  market: Orderbook;
+  change?: LevelChange;
+}) => (
+  // A changed level flashes briefly. On a thin book this is the only visible sign that the
+  // feed is alive: the best bid and ask can sit still for minutes while the book behind
+  // them moves.
+  <tr
+    className={`relative transition-colors duration-700 ${
+      change === "added" || change === "increased" ? "bg-success/20" : change === "decreased" ? "bg-warning/20" : ""
+    }`}
+  >
     <td className="relative px-2 py-0.5 font-mono text-xs">
       {/* Depth bar sits behind the numbers; width comes from cumulative size. */}
       <span
@@ -37,7 +55,17 @@ const LadderRow = ({ level, side, market }: { level: BookLevel; side: "bid" | "a
   </tr>
 );
 
-const SideTable = ({ levels, side, market }: { levels: BookLevel[]; side: "bid" | "ask"; market: Orderbook }) => (
+const SideTable = ({
+  levels,
+  side,
+  market,
+  changes,
+}: {
+  levels: BookLevel[];
+  side: "bid" | "ask";
+  market: Orderbook;
+  changes: Map<string, LevelChange>;
+}) => (
   <div className="flex-1 overflow-x-auto">
     <table className="table table-xs w-full">
       <thead>
@@ -55,7 +83,15 @@ const SideTable = ({ levels, side, market }: { levels: BookLevel[]; side: "bid" 
             </td>
           </tr>
         ) : (
-          levels.map(level => <LadderRow key={`${side}-${level.price}`} level={level} side={side} market={market} />)
+          levels.map(level => (
+            <LadderRow
+              key={`${side}-${level.price}`}
+              level={level}
+              side={side}
+              market={market}
+              change={changes.get(`${side}-${level.price}`)}
+            />
+          ))
         )}
       </tbody>
     </table>
@@ -87,7 +123,15 @@ export const SpreadReadout = ({ depth, market }: { depth: NormalizedDepth; marke
   );
 };
 
-export const DepthLadder = ({ depth, market }: { depth: NormalizedDepth; market: Orderbook }) => {
+export const DepthLadder = ({
+  depth,
+  market,
+  changes = new Map(),
+}: {
+  depth: NormalizedDepth;
+  market: Orderbook;
+  changes?: Map<string, LevelChange>;
+}) => {
   if (depth.isEmpty) {
     return (
       <div className="rounded-box bg-base-200 p-8 text-center">
@@ -101,8 +145,8 @@ export const DepthLadder = ({ depth, market }: { depth: NormalizedDepth; market:
 
   return (
     <div className="flex flex-col gap-4 md:flex-row">
-      <SideTable levels={depth.bids} side="bid" market={market} />
-      <SideTable levels={depth.asks} side="ask" market={market} />
+      <SideTable levels={depth.bids} side="bid" market={market} changes={changes} />
+      <SideTable levels={depth.asks} side="ask" market={market} changes={changes} />
     </div>
   );
 };

@@ -4,8 +4,8 @@
 
 // Polling. The public market-data endpoints are served from a short-lived cache,
 // so polling faster than this only burns rate limit.
-export const DEPTH_POLL_INTERVAL_MS = 2000;
-export const BOOKS_POLL_INTERVAL_MS = 10000;
+export const DEPTH_POLL_INTERVAL_MS = 1500;
+export const BOOKS_POLL_INTERVAL_MS = 8000;
 
 // Gas limits for the on-chain onboarding steps (Hedera needs an explicit limit).
 export const GAS_LIMITS = {
