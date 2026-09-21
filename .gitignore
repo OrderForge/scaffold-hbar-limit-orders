@@ -23,3 +23,19 @@ node_modules
 dist
 
 .env
+
+# --- limit-orders ---
+# Secrets: never commit. The bounty gate fails on a committed .env.
+.env
+.env.*
+!.env.example
+
+# Internal bounty kit — strategy, scoring, competitor notes. NOT for the public repo.
+docs/kit/
+
+# Local deployment state written by `yarn clob:bootstrap` (commit .clob.json.example instead)
+.clob.json
+
+# Local scratch
+captures/
+*.local.json

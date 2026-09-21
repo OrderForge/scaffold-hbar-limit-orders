@@ -1,0 +1,55 @@
+{
+  "name": "limit-orders-yarn",
+  "description": "Deterministic commands. Nothing here needs live secrets or a live API.",
+  "requiresNoSecrets": true,
+  "forbiddenCommands": [
+    "npm install",
+    "npm run",
+    "pnpm install",
+    "pnpm run"
+  ],
+  "commands": [
+    {
+      "name": "install",
+      "command": "yarn install",
+      "timeoutMs": 600000,
+      "purpose": "Install workspace dependencies."
+    },
+    {
+      "name": "wording",
+      "command": "yarn lint:wording",
+      "timeoutMs": 60000,
+      "purpose": "Fails if README.md or docs/*.md use claims the design cannot back ('trustless', 'fully on-chain', 'verifiable fair execution'). See PLAN_TO_100 wording rules."
+    },
+    {
+      "name": "lint",
+      "command": "yarn lint",
+      "timeoutMs": 300000,
+      "purpose": "Lint nextjs + hardhat."
+    },
+    {
+      "name": "compile",
+      "command": "yarn hardhat:compile",
+      "timeoutMs": 300000,
+      "purpose": "Compile contracts."
+    },
+    {
+      "name": "clob-test",
+      "command": "yarn workspace @sh/nextjs test:clob",
+      "timeoutMs": 300000,
+      "purpose": "Unit tests for formatting, tick/lot/minNotional validation, depth reconciliation and crossed-book handling, against the captured fixtures."
+    },
+    {
+      "name": "hardhat-test",
+      "command": "yarn hardhat:test",
+      "timeoutMs": 600000,
+      "purpose": "Contract/MockHTS tests."
+    },
+    {
+      "name": "build",
+      "command": "yarn next:build",
+      "timeoutMs": 600000,
+      "purpose": "Production build incl. type checks."
+    }
+  ]
+}

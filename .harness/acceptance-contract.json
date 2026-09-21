@@ -1,0 +1,26 @@
+{
+  "name": "limit-orders-acceptance",
+  "assertions": [
+    { "id": "C1", "severity": "critical", "walletRequired": false, "verifiableWithoutCredentials": true,
+      "statement": "The markets page lists live order books from the SaucerSwap testnet API with no wallet and no deployment, showing each market's status (OPEN/CLOSED), 24h volume, and fee rates converted from pips to a percentage.",
+      "howToVerify": "Open /markets. Confirm at least one market is listed with status OPEN and a non-zero 24h volume. Confirm fees render as a percentage (2000 pips = 0.2%), not as the raw integer." },
+    { "id": "C2", "severity": "critical", "walletRequired": false, "verifiableWithoutCredentials": true,
+      "statement": "A market page renders a depth ladder with bid and ask levels, cumulative depth bars, and a spread readout; when the book is crossed (best bid above best ask) it shows an explicit crossed badge rather than a broken or negative-looking spread.",
+      "howToVerify": "Open /market/3. Confirm bids and asks render with prices and sizes. If bestBid > bestAsk, confirm a 'crossed' indicator appears. No NaN or Infinity anywhere on the page." },
+    { "id": "C3", "severity": "critical", "walletRequired": false, "verifiableWithoutCredentials": true,
+      "statement": "Non-tradeable markets and unknown ids degrade gracefully: a CLOSED or HALTED market renders with a clear badge and disabled order entry; an unknown market id shows 'Market not found'.",
+      "howToVerify": "Open a CLOSED market from /markets and confirm the badge and disabled entry. Open /market/999999 and confirm the not-found state with no console errors." },
+    { "id": "C4", "severity": "critical", "walletRequired": true, "verifiableWithoutCredentials": false, "executableWithTestSigner": true,
+      "statement": "The app detects whether the connected account has associated the market's base and quote tokens and can associate them in one click, producing a real testnet transaction with a working HashScan link.",
+      "howToVerify": "Connect the burner wallet, open /market/3, use the associate action, then confirm via mirror node GET /accounts/{id}/tokens that the token now appears, and that the HashScan link in the UI resolves to that transaction." },
+    { "id": "C5", "severity": "major", "walletRequired": true, "verifiableWithoutCredentials": false, "executableWithTestSigner": true,
+      "statement": "Signing an order writes the intent to the HCS journal topic before submission, and the journal page shows the record with its consensus timestamp.",
+      "howToVerify": "Place an order (or use the dry-run sign action), then open /journal and confirm a record with the orderbook id, side, price, size and EIP-712 hash, linked to the HCS message on HashScan." },
+    { "id": "C6", "severity": "major", "walletRequired": true, "verifiableWithoutCredentials": false,
+      "statement": "Order entry validates against the market's tickStep, sizeStep, lotSize and minNotional BEFORE any signature is requested, with a specific message naming the rule that failed.",
+      "howToVerify": "On /market/3 enter a price off-tick and a size below minNotional; confirm the form blocks submission and names the violated constraint. Confirm no wallet signature prompt appeared." },
+    { "id": "C7", "severity": "minor", "walletRequired": false, "verifiableWithoutCredentials": true,
+      "statement": "README documents which mode the template runs in (testnet-live, mainnet-read, or seeded) and how to switch with an environment variable alone.",
+      "howToVerify": "Read the README 'Modes' section; confirm NEXT_PUBLIC_CLOB_API_URL is named and the tradeoffs are explained." }
+  ]
+}

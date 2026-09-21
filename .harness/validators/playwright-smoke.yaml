@@ -1,0 +1,21 @@
+server:
+  command: yarn next:dev
+  url: http://localhost:3000
+  readyTimeoutMs: 180000
+routes:
+  - path: /
+    expect:
+      visibleText: ["limit-orders"]
+  - path: /markets
+    expect:
+      visibleText: ["SAUCE"]
+  - path: /market/3
+    expect:
+      visibleText: ["Bids", "Asks"]
+  - path: /market/999999
+    expect:
+      visibleText: ["Market not found"]
+forbidden:
+  visibleText: ["Application error", "Unhandled Runtime Error", "NaN", "Infinity", "500 Internal"]
+console:
+  failOnError: true

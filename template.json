@@ -1,10 +1,14 @@
 {
-  "name": "nft-subscription-marketplace",
-  "description": "NFT subscription marketplace with HTS tokens and Hardhat contracts. Tokenize subscriptions and rent unused periods.",
+  "name": "limit-orders",
+  "description": "Add non-custodial limit orders from SaucerSwap's order book to any Hedera app, with every fill verified on-chain against what you signed.",
   "create-scaffold-hbar": {
     "capabilities": {
-      "frontend": ["nextjs-app"],
-      "solidityFramework": ["hardhat"]
+      "frontend": [
+        "nextjs-app"
+      ],
+      "solidityFramework": [
+        "hardhat"
+      ]
     },
     "defaults": {
       "frontend": "nextjs-app",
@@ -15,7 +19,7 @@
         {
           "steps": [
             {
-              "text": "This template uses Hardhat and deploys to Hedera testnet/mainnet."
+              "text": "Market data works with no wallet, no API key and no deployed contract: run the frontend and open /markets."
             }
           ]
         },
@@ -23,24 +27,28 @@
           "title": "Next steps",
           "steps": [
             {
-              "label": "Set up deployer account",
+              "label": "Start the frontend",
+              "command": "{run:next:dev}"
+            },
+            {
+              "label": "Copy the env files",
+              "text": "packages/nextjs/.env.example \u2192 packages/nextjs/.env, packages/hardhat/.env.example \u2192 packages/hardhat/.env"
+            },
+            {
+              "label": "Generate or import a deployer account (only needed for on-chain steps)",
               "command": "{run:hardhat:account:generate}"
             },
             {
-              "label": "Fund your account with testnet HBAR",
+              "label": "Fund the account with testnet HBAR",
               "url": "https://portal.hedera.com/faucet"
             },
             {
-              "label": "Deploy contracts",
-              "command": "{run:hardhat:deploy} --network hederaTestnet"
+              "label": "Create the HCS order-intent journal topic",
+              "command": "yarn clob:bootstrap --network hederaTestnet"
             },
             {
-              "label": "Create NFT collection",
-              "command": "cd packages/hardhat && npx ts-node scripts/createCollection.ts"
-            },
-            {
-              "label": "Start the frontend",
-              "command": "{run:next:start}"
+              "text": "SaucerSwap V3 Orderbook API docs:",
+              "url": "https://docs.saucerswap.finance/api-reference/orderbook/overview"
             }
           ]
         }

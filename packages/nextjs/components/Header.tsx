@@ -4,15 +4,7 @@ import React, { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Bars3Icon,
-  BugAntIcon,
-  CalendarDaysIcon,
-  CurrencyDollarIcon,
-  PlusCircleIcon,
-  ShoppingBagIcon,
-  TicketIcon,
-} from "@heroicons/react/24/outline";
+import { Bars3Icon, BugAntIcon, ChartBarIcon } from "@heroicons/react/24/outline";
 import { RainbowKitCustomConnectButton } from "~~/components/scaffold-hbar";
 import { useOutsideClick } from "~~/hooks/scaffold-hbar";
 
@@ -28,29 +20,9 @@ export const menuLinks: HeaderMenuLink[] = [
     href: "/",
   },
   {
-    label: "Rentals",
-    href: "/marketplace",
-    icon: <ShoppingBagIcon className="h-4 w-4" />,
-  },
-  {
-    label: "Sales",
-    href: "/sales",
-    icon: <CurrencyDollarIcon className="h-4 w-4" />,
-  },
-  {
-    label: "My Subscriptions",
-    href: "/my-subscriptions",
-    icon: <TicketIcon className="h-4 w-4" />,
-  },
-  {
-    label: "Mint",
-    href: "/mint",
-    icon: <PlusCircleIcon className="h-4 w-4" />,
-  },
-  {
-    label: "My Bookings",
-    href: "/my-bookings",
-    icon: <CalendarDaysIcon className="h-4 w-4" />,
+    label: "Markets",
+    href: "/markets",
+    icon: <ChartBarIcon className="h-4 w-4" />,
   },
   {
     label: "Debug Contracts",

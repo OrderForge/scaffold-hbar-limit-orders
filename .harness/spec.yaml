@@ -1,0 +1,66 @@
+schemaVersion: 2
+
+name: limit-orders
+description: >
+  scaffold-hbar template: a reference client and trading terminal for SaucerSwap's V3
+  central limit order book on Hedera — live books, depth and trades from the public API,
+  wallet-challenge JWT auth, EIP-712 signed order placement and cancellation, plus HTS
+  association handling and an HCS journal of every signed order intent.
+
+agent: claude
+
+prd:
+  - .harness/prds/01-market-data.md
+  - .harness/prds/02-association-and-journal.md
+  - .harness/prds/03-auth-and-account.md
+  - .harness/prds/04-orders-and-streams.md
+  - .harness/prds/05-docs-and-polish.md
+
+maxAttempts: 3
+
+baseline:
+  commands:
+    - name: install
+      command: yarn install
+      timeoutMs: 600000
+    - name: compile
+      command: yarn hardhat:compile
+      timeoutMs: 300000
+    - name: build
+      command: yarn next:build
+      timeoutMs: 600000
+
+validators:
+  static: .harness/validators/static.json
+  commands: .harness/validators/yarn.json
+  playwright: .harness/validators/playwright-smoke.yaml
+
+contract: .harness/acceptance-contract.json
+validator:
+  enabled: true
+
+# Tier 3.5 — enable from increment 2. Operator must be ECDSA (EIP-712 signing needs an EVM alias).
+# chainValidation:
+#   enabled: true
+#   network: testnet
+#   operator:
+#     accountIdEnv: HEDERA_OPERATOR_ID
+#     privateKeyEnv: HEDERA_OPERATOR_KEY
+#   fundingHbar: 30
+#   sweepBack: true
+#   expose:
+#     browserLocalStorageKey: burnerWallet.pk
+#     envVars: [DEPLOYER_PRIVATE_KEY]
+#   deploy:
+#     commands:
+#       - name: bootstrap-testnet
+#         command: yarn clob:bootstrap --network hederaTestnet
+#         timeoutMs: 600000
+
+requiredFiles:
+  - template.json
+  - AGENTS.md
+  - README.md
+  - LICENSE
+  - packages/nextjs/lib/clob/client.ts
+  - packages/nextjs/app/markets/page.tsx

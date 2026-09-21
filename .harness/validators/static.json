@@ -1,0 +1,126 @@
+{
+  "name": "limit-orders-static",
+  "description": "Static invariants for the limit-orders template.",
+  "jsonAssertions": [
+    {
+      "file": "template.json",
+      "path": "name",
+      "equals": "limit-orders"
+    },
+    {
+      "file": "template.json",
+      "path": "create-scaffold-hbar.defaults.frontend",
+      "equals": "nextjs-app"
+    },
+    {
+      "file": "template.json",
+      "path": "create-scaffold-hbar.defaults.solidityFramework",
+      "equals": "hardhat"
+    }
+  ],
+  "fileAssertions": {
+    "required": [
+      "README.md",
+      "LICENSE",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "template.json",
+      "package.json",
+      "docs/microstructure.md",
+      "docs/integration.md",
+      "packages/nextjs/.env.example",
+      "packages/hardhat/.env.example",
+      "packages/nextjs/lib/clob/client.ts",
+      "packages/nextjs/lib/clob/format.ts",
+      "packages/nextjs/lib/mirror/client.ts",
+      "packages/nextjs/lib/journal/index.ts",
+      ".harness/spec.yaml",
+      "packages/nextjs/lib/verify/fills.ts",
+      "docs/hedera.md"
+    ],
+    "forbidden": [
+      ".env",
+      "packages/nextjs/.env",
+      "packages/hardhat/.env",
+      "packages/foundry"
+    ]
+  },
+  "textAssertions": [
+    {
+      "file": "README.md",
+      "contains": [
+        "yarn install",
+        "/markets",
+        "SaucerSwap",
+        "order book",
+        "HTS",
+        "HCS",
+        "MIT"
+      ]
+    },
+    {
+      "file": "LICENSE",
+      "contains": [
+        "MIT License"
+      ]
+    },
+    {
+      "file": "AGENTS.md",
+      "contains": [
+        "clob:bootstrap",
+        "tickStep",
+        "lastUpdateId"
+      ]
+    },
+    {
+      "file": "packages/nextjs/lib/clob/format.ts",
+      "contains": [
+        "tickStep",
+        "sizeStep",
+        "minNotional"
+      ]
+    },
+    {
+      "file": "docs/microstructure.md",
+      "contains": [
+        "pips",
+        "crossed"
+      ]
+    },
+    {
+      "file": "README.md",
+      "contains": [
+        "non-custodial",
+        "verified on-chain",
+        "What you still trust SaucerSwap for"
+      ]
+    }
+  ],
+  "secretScan": {
+    "failOnFiles": [
+      ".env",
+      "packages/nextjs/.env",
+      "packages/hardhat/.env",
+      "packages/nextjs/.env.local",
+      ".clob.json"
+    ],
+    "patterns": [
+      {
+        "name": "hex-private-key-assignment",
+        "pattern": "(PRIVATE_KEY|OPERATOR_KEY)\\s*[=:]\\s*[\"']?(0x)?[0-9a-fA-F]{64}\\b"
+      },
+      {
+        "name": "der-ed25519-private-key",
+        "pattern": "302e020100300506032b657004220420[0-9a-fA-F]{64}"
+      },
+      {
+        "name": "der-ecdsa-private-key",
+        "pattern": "3030020100300706052b8104000a04220420[0-9a-fA-F]{64}"
+      },
+      {
+        "name": "jwt",
+        "pattern": "eyJ[A-Za-z0-9_-]{10,}\\.eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}"
+      }
+    ]
+  }
+}
