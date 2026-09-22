@@ -103,7 +103,7 @@ export const OrderEntry = ({ market }: { market: Orderbook }) => {
         <SignInButton compact />
       </div>
 
-      <WalletGate needsSignIn action="place an order">
+      <WalletGate needsSignIn showConnectButton action="place an order">
         <>
           <div className="mt-3 join w-full">
             {(["BUY", "SELL"] as const).map(option => (

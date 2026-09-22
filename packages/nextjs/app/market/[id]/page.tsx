@@ -14,7 +14,7 @@ import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
 import { useChangedLevels, useSecondsSince } from "~~/hooks/clob/useFreshness";
 import { useBook, useDepth, useIsTabVisible, useTrades } from "~~/hooks/clob/useMarketData";
 import { PublicReadUnavailableError } from "~~/lib/clob/errors";
-import { formatPercent, pipsToPercentLabel } from "~~/lib/clob/format";
+import { formatPercent, formatSmallestUnits, pipsToPercentLabel } from "~~/lib/clob/format";
 import { Orderbook, marketLabel, marketState } from "~~/lib/clob/types";
 import { hashscan } from "~~/lib/mirror/client";
 
@@ -26,8 +26,11 @@ const MetadataPanel = ({ book }: { book: Orderbook }) => {
     ["Market id", book.id],
     ["Tick size", book.tickStep],
     ["Size step", book.sizeStep],
-    ["Lot size", `${book.lotSize} (smallest units)`],
-    ["Min notional", book.minNotional],
+    ["Lot size", `${formatSmallestUnits(book.lotSize, book.baseTokenDecimals)} ${book.baseTokenSymbol ?? ""}`],
+    [
+      "Min notional",
+      `${formatSmallestUnits(book.minNotional, book.quoteTokenDecimals)} ${book.quoteTokenSymbol ?? ""}`,
+    ],
     ["Maker fee", pipsToPercentLabel(book.makerFeePips)],
     ["Taker fee", pipsToPercentLabel(book.takerFeePips)],
     [
@@ -85,7 +88,11 @@ const Freshness = ({ updatedAt, live, sequence }: { updatedAt?: number; live: bo
   const age = useSecondsSince(updatedAt);
   return (
     <div className="flex items-center gap-2 text-xs">
-      <LiveIndicator live={live} label={age === null ? "live" : `updated ${age.toFixed(1)}s ago`} />
+      <LiveIndicator
+        live={live}
+        loading={updatedAt === undefined}
+        label={age === null ? "live" : `updated ${age.toFixed(1)}s ago`}
+      />
       {sequence !== undefined && (
         <span
           className="font-mono opacity-50"
@@ -246,8 +253,8 @@ const MarketPage = () => {
         </div>
 
         <div className="flex flex-col gap-4">
-          <OrderEntry market={book} />
           <OnboardingChecklist market={book} />
+          <OrderEntry market={book} />
           <AccountPanel market={book} />
           <DryRunSign market={book} />
           <MetadataPanel book={book} />

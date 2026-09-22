@@ -1,9 +1,11 @@
 import books from "./fixtures/books.json";
+import crossedDepth from "./fixtures/depth-3-crossed.json";
 import mainnetBooks from "./fixtures/mainnet-books.json";
 import { describe, expect, it } from "vitest";
 import {
   compareDecimalStrings,
   formatPercent,
+  formatSmallestUnits,
   formatUnits,
   notional,
   notionalUnits,
@@ -40,8 +42,7 @@ describe("parseDecimal / formatUnits", () => {
   });
 
   it("round-trips every price level of the captured book", () => {
-    const depth = require("./fixtures/depth-3-crossed.json");
-    for (const [price, size] of [...depth.bids, ...depth.asks]) {
+    for (const [price, size] of [...crossedDepth.bids, ...crossedDepth.asks]) {
       expect(formatUnits(parseDecimal(price, 8), 8)).toBe(price.replace(/0+$/, "").replace(/\.$/, ""));
       expect(parseDecimal(size, 6)).toBeGreaterThan(0n);
     }
@@ -208,5 +209,23 @@ describe("display helpers", () => {
     expect(compareDecimalStrings("0.04286080", "0.0428608")).toBe(0);
     expect(compareDecimalStrings("0.0428609", "0.0428608")).toBe(1);
     expect(compareDecimalStrings("0.0428607", "0.0428608")).toBe(-1);
+  });
+});
+
+describe("formatSmallestUnits", () => {
+  it("renders minNotional as a token amount, not raw units", () => {
+    // Shown raw, a mainnet market reads "Min notional 15000000" when it means 15 USDC.
+    expect(formatSmallestUnits("15000000", 6)).toBe("15");
+    expect(formatSmallestUnits("1", 6)).toBe("0.000001");
+  });
+
+  it("renders lotSize in base tokens", () => {
+    // 10000000 against a 6dp token is 10 SAUCE — which is why depth sizes are multiples of 10.
+    expect(formatSmallestUnits("10000000", 6)).toBe("10");
+    expect(formatSmallestUnits("10000000", 8)).toBe("0.1");
+  });
+
+  it("returns the input unchanged when it is not an integer string", () => {
+    expect(formatSmallestUnits("not-a-number", 6)).toBe("not-a-number");
   });
 });

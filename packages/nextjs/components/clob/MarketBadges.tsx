@@ -35,10 +35,27 @@ export const CrossedBadge = ({ className = "" }: { className?: string }) => (
   </span>
 );
 
-/** Shows that data is arriving, and that polling pauses when the tab is hidden. */
-export const LiveIndicator = ({ live, label = "live" }: { live: boolean; label?: string }) => (
+/**
+ * Shows that data is arriving, and that polling pauses when the tab is hidden.
+ *
+ * Loading and paused are different states: saying "paused" while the first request is still
+ * in flight tells the reader the feed is off when it is simply not back yet.
+ */
+export const LiveIndicator = ({
+  live,
+  label = "live",
+  loading = false,
+}: {
+  live: boolean;
+  label?: string;
+  loading?: boolean;
+}) => (
   <span className="inline-flex items-center gap-1.5 text-xs opacity-70">
-    <span className={`inline-block h-2 w-2 rounded-full ${live ? "bg-success animate-pulse-fast" : "bg-base-300"}`} />
-    {live ? label : "paused"}
+    <span
+      className={`inline-block h-2 w-2 rounded-full ${
+        loading ? "animate-pulse bg-warning" : live ? "bg-success animate-pulse-fast" : "bg-base-300"
+      }`}
+    />
+    {loading ? "loading" : live ? label : "paused"}
   </span>
 );

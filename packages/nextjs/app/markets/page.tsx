@@ -6,7 +6,7 @@ import { NetworkToggle } from "~~/components/clob/NetworkToggle";
 import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
 import { useBooks, useIsTabVisible } from "~~/hooks/clob/useMarketData";
 import { PublicReadUnavailableError } from "~~/lib/clob/errors";
-import { formatPercent, formatWithGrouping, pipsToPercentLabel } from "~~/lib/clob/format";
+import { formatPercent, formatSmallestUnits, formatWithGrouping, pipsToPercentLabel } from "~~/lib/clob/format";
 import { Orderbook, marketLabel } from "~~/lib/clob/types";
 import { hashscan } from "~~/lib/mirror/client";
 
@@ -43,7 +43,9 @@ const MarketRow = ({ book }: { book: Orderbook }) => {
         {pipsToPercentLabel(book.makerFeePips)} / {pipsToPercentLabel(book.takerFeePips)}
       </td>
       <td className="text-right font-mono text-xs opacity-70">{book.tickStep}</td>
-      <td className="text-right font-mono text-xs opacity-70">{book.minNotional}</td>
+      <td className="text-right font-mono text-xs opacity-70">
+        {formatSmallestUnits(book.minNotional, book.quoteTokenDecimals)} {book.quoteTokenSymbol}
+      </td>
       <td className="text-right text-xs">
         <a className="link" href={links.token(book.baseTokenId)} target="_blank" rel="noreferrer">
           {book.baseTokenId}
@@ -68,7 +70,7 @@ const Markets = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <LiveIndicator live={visible && !isLoading} />
+          <LiveIndicator live={visible} loading={isLoading} />
           <NetworkToggle />
         </div>
       </div>

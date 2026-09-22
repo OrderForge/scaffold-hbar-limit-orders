@@ -31,7 +31,10 @@ const scaffoldConfig = {
 
   pollingInterval: 10000,
 
-  enableBurnerWallet: true,
+  // On by default so the template works with no wallet extension. Set
+  // NEXT_PUBLIC_ENABLE_BURNER_WALLET=false to turn it off — useful for screenshots, demos
+  // and CI runs, where a wallet connecting by itself changes what the page shows.
+  enableBurnerWallet: process.env.NEXT_PUBLIC_ENABLE_BURNER_WALLET !== "false",
 
   rpcOverrides: {
     [chains.hedera.id]: process.env.NEXT_PUBLIC_HEDERA_MAINNET_RPC_URL || "https://mainnet.hashio.io/api",

@@ -139,6 +139,20 @@ export const notionalUnits = (price: string, size: string, baseDecimals: number,
 export const notional = (price: string, size: string, baseDecimals: number, quoteDecimals: number): string =>
   formatUnits(notionalUnits(price, size, baseDecimals, quoteDecimals), quoteDecimals);
 
+/**
+ * Render a smallest-units field (minNotional, lotSize) as a token amount.
+ *
+ * These two arrive as integer strings in the token's smallest units, unlike prices. Showing
+ * the raw value tells a reader "15000000" where the truth is "15 USDC".
+ */
+export const formatSmallestUnits = (value: string, decimals: number): string => {
+  try {
+    return formatUnits(BigInt(value.split(".")[0] || "0"), decimals);
+  } catch {
+    return value;
+  }
+};
+
 export type OrderRule = "tick" | "sizeStep" | "lot" | "minNotional" | "positive" | "market";
 
 export type ValidationResult = { ok: true } | { ok: false; rule: OrderRule; message: string };

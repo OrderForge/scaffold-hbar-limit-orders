@@ -14,6 +14,10 @@ npm create scaffold-hbar@latest --template OrderForge/scaffold-hbar-limit-orders
 > planned piece not built: both SaucerSwap streams require a JWT, so the keyless terminal polls instead,
 > which is documented rather than hidden. See [docs/microstructure.md](docs/microstructure.md#depth-reconciliation-why-a-snapshot-is-not-enough).
 
+![The markets list: live order books with state, fees as percentages, and each market's trading rules](docs/images/markets.png)
+
+<p align="center"><em>Live mainnet markets. No wallet, no API key, no deployed contract.</em></p>
+
 ## Disclaimer
 
 This template — contracts, frontend and tooling — is **experimental** and **not audited**. It places
@@ -39,6 +43,11 @@ data. Reading mainnet prices moves no funds; wallet actions stay on your wallet'
 > so a browser cannot call it directly however public the endpoint is — it is built for server-side
 > clients. The app forwards the request from its server instead. The proxy holds no credentials. See
 > [docs/DISCREPANCIES.md](docs/DISCREPANCIES.md).
+
+![A market page: depth ladder with cumulative bars, spread readout, trade tape and the market's rules](docs/images/market.png)
+
+<p align="center"><em>HBAR/USDC on mainnet: depth ladder, spread, trade tape linked to settlement transactions,
+and the six-step readiness checklist.</em></p>
 
 ## What this is
 

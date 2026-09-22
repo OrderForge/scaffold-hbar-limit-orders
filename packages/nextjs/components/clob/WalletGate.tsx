@@ -19,11 +19,17 @@ export const WalletGate = ({
   children,
   needsSignIn = false,
   action = "trade",
+  showConnectButton = false,
 }: {
   children: ReactNode;
   /** Also require an API session, for anything reading or writing account data. */
   needsSignIn?: boolean;
   action?: string;
+  /**
+   * Render the connect button itself. Only one panel on a page should: four stacked
+   * "Connect Wallet" buttons down a sidebar reads as a broken page, not an invitation.
+   */
+  showConnectButton?: boolean;
 }) => {
   const { isConnected } = useAccount();
   const { network, walletNetwork, walletOnUnsupportedChain, isReadOnlyNetwork, setNetwork } = useClobNetwork();
@@ -33,8 +39,10 @@ export const WalletGate = ({
   if (!isConnected) {
     return (
       <div className="flex flex-col items-start gap-2">
-        <p className="text-xs opacity-70">Connect a wallet to {action}.</p>
-        <RainbowKitCustomConnectButton />
+        <p className="text-xs opacity-70">
+          Connect a wallet to {action}.{!showConnectButton && " Use the button in the header."}
+        </p>
+        {showConnectButton && <RainbowKitCustomConnectButton />}
       </div>
     );
   }

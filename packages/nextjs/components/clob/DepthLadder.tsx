@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { CrossedBadge } from "./MarketBadges";
 import { LevelChange } from "~~/hooks/clob/useFreshness";
 import { BookLevel, NormalizedDepth } from "~~/lib/clob/depth";
@@ -123,6 +124,9 @@ export const SpreadReadout = ({ depth, market }: { depth: NormalizedDepth; marke
   );
 };
 
+/** Levels shown per side before "show all". The touch is what matters; the tail is context. */
+const DEFAULT_LEVELS = 15;
+
 export const DepthLadder = ({
   depth,
   market,
@@ -132,6 +136,9 @@ export const DepthLadder = ({
   market: Orderbook;
   changes?: Map<string, LevelChange>;
 }) => {
+  const [showAll, setShowAll] = useState(false);
+  const deeper = Math.max(depth.bids.length, depth.asks.length) > DEFAULT_LEVELS;
+  const limit = showAll ? undefined : DEFAULT_LEVELS;
   if (depth.isEmpty) {
     return (
       <div className="rounded-box bg-base-200 p-8 text-center">
@@ -144,9 +151,19 @@ export const DepthLadder = ({
   }
 
   return (
-    <div className="flex flex-col gap-4 md:flex-row">
-      <SideTable levels={depth.bids} side="bid" market={market} changes={changes} />
-      <SideTable levels={depth.asks} side="ask" market={market} changes={changes} />
-    </div>
+    <>
+      <div className="flex flex-col gap-4 md:flex-row">
+        <SideTable levels={depth.bids.slice(0, limit)} side="bid" market={market} changes={changes} />
+        <SideTable levels={depth.asks.slice(0, limit)} side="ask" market={market} changes={changes} />
+      </div>
+
+      {deeper && (
+        <button type="button" className="btn btn-ghost btn-xs mt-2 w-full" onClick={() => setShowAll(value => !value)}>
+          {showAll
+            ? "show top of book"
+            : `show all ${depth.bids.length + depth.asks.length} levels (${depth.bids.length} bids, ${depth.asks.length} asks)`}
+        </button>
+      )}
+    </>
   );
 };
