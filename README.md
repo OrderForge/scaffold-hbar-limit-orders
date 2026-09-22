@@ -76,6 +76,48 @@ template verifies the second part and is explicit about the first.
 
 ## Architecture
 
+```mermaid
+flowchart LR
+    subgraph browser["Your browser"]
+        UI["Markets · Ladder · Order entry<br/>Journal · Fill checks"]
+        W["Wallet<br/>EIP-712 signature"]
+    end
+
+    subgraph app["This app's server"]
+        PX["/api/clob proxy<br/>(the API sends no CORS headers)"]
+        JR["/api/journal<br/>(the only Hedera key)"]
+    end
+
+    subgraph saucer["SaucerSwap"]
+        API["V3 Orderbook API<br/>books · depth · trades · orders"]
+        M["Matching engine<br/>off-chain, not observable"]
+    end
+
+    subgraph hedera["Hedera"]
+        R["Reactor + Permit2<br/>settlement, fee caps, cancels"]
+        T["HCS topic<br/>signed intents"]
+        MN["Mirror node<br/>balances · allowances · fill logs"]
+    end
+
+    UI -->|read| PX --> API
+    UI -->|"1 - journal the intent"| JR --> T
+    W -->|"2 - sign the order"| UI
+    UI -->|"3 - submit"| PX
+    API --> M --> R
+    R -->|fill events| MN
+    MN -->|"4 - verify against the signed order"| UI
+    T -->|read back| UI
+    W -->|onboarding + on-chain cancel| R
+
+    classDef trust fill:#fff3cd,stroke:#d39e00
+    class M trust
+```
+
+The highlighted box is the part nobody can verify: matching happens off-chain, and only
+SaucerSwap's filler can settle an order. Everything else is either in your browser, on your
+own server, or on Hedera where anyone can check it. See
+[docs/hedera.md](docs/hedera.md#the-trust-boundary).
+
 | Piece | Where |
 | --- | --- |
 | Typed API client | `packages/nextjs/lib/clob/` |
@@ -86,6 +128,7 @@ template verifies the second part and is explicit about the first.
 | HCS journal | `packages/nextjs/lib/journal/` + `app/api/journal` (the only place holding a Hedera key) |
 | Order build/sign/cancel | `packages/nextjs/lib/clob/orders.ts` |
 | Fill verification | `packages/nextjs/lib/verify/fills.ts` |
+| EIP-712 digest parity | `packages/hardhat/contracts/OrderDigest.sol` — the order type written a second time, in Solidity, so a transcription error fails a test |
 | Scripts | `packages/hardhat/scripts/` — `clob:bootstrap`, `clob:fund`, `clob:status`, `clob:doctor` |
 
 ## Full setup (for the on-chain half)
@@ -203,6 +246,7 @@ yarn clob:bootstrap             # create the HCS journal topic (idempotent)
 yarn clob:status                # check API, contracts, operator and journal
 yarn clob:fund --hbar 20        # swap HBAR into a market's tokens
 yarn clob:doctor                # check the live API still matches what this was built against
+yarn clob:demo                  # record a walkthrough of the running app
 yarn lint:wording               # fail the build if the docs claim more than the design backs
 ```
 
@@ -242,6 +286,9 @@ docs/            microstructure, integration, hedera, discrepancies
 - **No AMM swaps, liquidity provision, farming or staking.** This is the order book only. `clob:fund`
   uses the V1 router to buy test tokens, and that is the extent of it.
 - **No trading strategy, portfolio or P&L.** It places the order you ask for.
+- **No deployed contracts of its own.** It integrates SaucerSwap's. The one contract here,
+  `OrderDigest.sol`, is a test fixture: it recomputes the EIP-712 digest in Solidity so a
+  drift between the client's type and the real one fails `yarn hardhat:test`.
 - **No live depth stream.** Both SaucerSwap WebSockets require a JWT, so a keyless terminal cannot use
   them. Depth polls every 1.5 seconds and the UI shows how fresh it is.
 - **No proof that the venue treated you fairly.** Matching is off-chain. The template verifies settlement

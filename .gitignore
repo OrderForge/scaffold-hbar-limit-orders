@@ -36,6 +36,9 @@ docs/kit/
 # Local deployment state written by `yarn clob:bootstrap` (commit .clob.json.example instead)
 .clob.json
 
+# Recorded walkthroughs — regenerate with `yarn clob:demo`, do not commit binaries
+docs/video/
+
 # Local scratch
 captures/
 *.local.json

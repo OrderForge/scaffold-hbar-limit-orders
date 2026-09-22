@@ -133,6 +133,13 @@ OutputToken(address token,uint256 amount,address recipient)
 PartialFillInputToken(address token,uint256 amount)
 ```
 
+Because the type is not published, this template writes it out twice — in TypeScript for
+the client and in Solidity in
+[`OrderDigest.sol`](../packages/hardhat/contracts/OrderDigest.sol) — and `yarn hardhat:test`
+asserts the two produce the same digest for a real built order. A transcription error in a
+type nobody publishes would otherwise surface as a signature the reactor rejects for
+reasons that look like anything else.
+
 The `output.amount` is a **minimum**. That is what gives a signed order its price
 protection, and it is why the fill verifier can check a fill against the order rather than
 against the venue's word ([`lib/verify/fills.ts`](../packages/nextjs/lib/verify/fills.ts)).
