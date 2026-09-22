@@ -68,6 +68,14 @@ export const extractErrorMessage = (body: unknown, fallback: string): string => 
     // An Express HTML 404 page: "<pre>Cannot GET /books/999999</pre>"
     const match = body.match(/<pre>(.*?)<\/pre>/s);
     if (match) return match[1].trim();
+
+    // Any other HTML means something upstream answered with a page instead of an API
+    // response — a proxy, a captive portal, or a dev server with a stale build. Dumping
+    // the markup at the user tells them nothing; say what actually happened.
+    if (/^\s*<(!doctype|html)/i.test(body)) {
+      return "The server returned a web page instead of data. If you are running the app locally, restart it; otherwise something between you and the API is intercepting requests.";
+    }
+
     return body.slice(0, 200) || fallback;
   }
   if (body && typeof body === "object") {

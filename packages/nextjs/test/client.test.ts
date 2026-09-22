@@ -89,6 +89,20 @@ describe("error handling", () => {
     expect(error.body).toContain("Cannot GET");
   });
 
+  it("explains an HTML page instead of pasting markup at the user", async () => {
+    // A dev server with a stale build, a proxy, or a captive portal all do this.
+    fetchMock.mockImplementation(
+      async () =>
+        new Response("<!DOCTYPE html><html><head><style>body{display:none}</style></head></html>", {
+          status: 500,
+          headers: { "content-type": "text/html" },
+        }),
+    );
+    const error = await client.getBooks().catch(e => e);
+    expect(error.message).toContain("returned a web page instead of data");
+    expect(error.message).not.toContain("<!DOCTYPE");
+  });
+
   it("retries a 429 with backoff and then succeeds", async () => {
     fetchMock
       .mockImplementationOnce(async () => json({ error: "Too many requests" }, 429, { "retry-after": "0" }))
