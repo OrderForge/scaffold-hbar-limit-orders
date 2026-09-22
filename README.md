@@ -98,7 +98,7 @@ journal without sending it anywhere.
 
 | What | Evidence |
 | --- | --- |
-| HCS journal topic | [`0.0.10646020`](https://hashscan.io/testnet/topic/0.0.10646020) |
+| HCS journal topic | [`0.0.10662192`](https://hashscan.io/testnet/topic/0.0.10662192) |
 | Permit2 onboarding (4 transactions) | [SAUCE→Permit2](https://hashscan.io/testnet/transaction/0x490de469a1d0f08a825a80a79c8c6b12a9ca840939ea6f7239831fdffda37083), [Permit2→reactor](https://hashscan.io/testnet/transaction/0x0e9462293d2374b80222f2dba26b6868a538899cb34d5682e5ca49135de2379d), [USDC→Permit2](https://hashscan.io/testnet/transaction/0xdfa33dfdba54534f33d37987224a4ad6d89b9db4f1e1a729c99e2148f031a512), [Permit2→reactor](https://hashscan.io/testnet/transaction/0x488f4b370b19eaf740be8f7293cf35cd06f38bd0ccb4ca3a52f0d815f6d8c994) |
 | Order placed and cancelled | order 3494124 on book 3, 2026-09-19 |
 

@@ -47,8 +47,8 @@
               "command": "yarn clob:bootstrap --network hederaTestnet"
             },
             {
-              "text": "SaucerSwap V3 Orderbook API docs:",
-              "url": "https://docs.saucerswap.finance/api-reference/orderbook/overview"
+              "url": "https://docs.saucerswap.finance/api-reference/orderbook/overview",
+              "label": "SaucerSwap V3 Orderbook API docs"
             }
           ]
         }

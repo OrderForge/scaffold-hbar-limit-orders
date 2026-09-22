@@ -5,7 +5,7 @@ import Link from "next/link";
 import { WalletGate } from "./WalletGate";
 import { useAccount, useSignTypedData } from "wagmi";
 import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
-import { useHederaAccount } from "~~/hooks/clob/useOnboarding";
+import { useResolveHederaAccountId } from "~~/hooks/clob/useOnboarding";
 import { notional, parseDecimal, validateOrder } from "~~/lib/clob/format";
 import { Orderbook, marketLabel, marketState } from "~~/lib/clob/types";
 import { buildIntent, submitIntent } from "~~/lib/journal";
@@ -55,7 +55,7 @@ const ORDER_TYPES = {
 export const DryRunSign = ({ market }: { market: Orderbook }) => {
   const { address } = useAccount();
   const { config, client } = useClobNetwork();
-  const { data: hederaAccount } = useHederaAccount();
+  const resolveHederaAccountId = useResolveHederaAccountId();
   const { signTypedDataAsync } = useSignTypedData();
   const links = hashscan(config);
 
@@ -137,7 +137,7 @@ export const DryRunSign = ({ market }: { market: Orderbook }) => {
 
       const intent = buildIntent({
         action: "place",
-        account: hederaAccount?.accountId ?? address,
+        account: (await resolveHederaAccountId()) ?? address,
         accountEvm: address,
         orderbookId: market.id,
         baseTokenId: market.baseTokenId,

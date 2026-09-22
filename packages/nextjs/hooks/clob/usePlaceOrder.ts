@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useClobAuth } from "./useClobAuth";
 import { useClobNetwork } from "./useClobNetwork";
-import { useHederaAccount } from "./useOnboarding";
+import { useResolveHederaAccountId } from "./useOnboarding";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAccount, useSignTypedData } from "wagmi";
 import { getApiBase } from "~~/lib/clob/config";
@@ -45,7 +45,7 @@ export const usePlaceOrder = (market: Orderbook) => {
   const { address } = useAccount();
   const { config, network } = useClobNetwork();
   const { withAuth } = useClobAuth();
-  const { data: hederaAccount } = useHederaAccount();
+  const resolveHederaAccountId = useResolveHederaAccountId();
   const { signTypedDataAsync } = useSignTypedData();
   const queryClient = useQueryClient();
 
@@ -102,7 +102,7 @@ export const usePlaceOrder = (market: Orderbook) => {
         await submitIntent(
           buildIntent({
             action: "place",
-            account: hederaAccount?.accountId ?? address,
+            account: (await resolveHederaAccountId()) ?? address,
             accountEvm: address,
             orderbookId: market.id,
             baseTokenId: market.baseTokenId,

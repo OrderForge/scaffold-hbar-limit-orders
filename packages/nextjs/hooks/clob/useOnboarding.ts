@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import { useClobNetwork } from "./useClobNetwork";
 import { useQuery } from "@tanstack/react-query";
 import { useAccount, usePublicClient } from "wagmi";
@@ -29,6 +30,27 @@ export const useOnboarding = (market: Orderbook | null | undefined) => {
     refetchInterval: 15_000,
     staleTime: 5_000,
   });
+};
+
+/**
+ * Resolve the connected account's Hedera id on demand.
+ *
+ * `useHederaAccount` is a query and may not have settled when the user signs. A journal
+ * record whose `account` field holds an EVM address is still correct but reads badly, so
+ * the write path awaits this instead of taking whatever the query happens to hold.
+ */
+export const useResolveHederaAccountId = () => {
+  const { mirror } = useClobNetwork();
+  const { address } = useAccount();
+
+  return useCallback(async (): Promise<string | null> => {
+    if (!address) return null;
+    try {
+      return (await mirror.getAccount(address))?.accountId ?? null;
+    } catch {
+      return null;
+    }
+  }, [mirror, address]);
 };
 
 /** The connected account's Hedera id (`0.0.x`), resolved from its EVM address. */
