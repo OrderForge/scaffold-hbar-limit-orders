@@ -1,5 +1,12 @@
 export const HBAR_PRICE_CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes cache
-export const HBAR_PRICE_URL = "https://api.coingecko.com/api/v3/simple/price?ids=hedera-hashgraph&vs_currencies=usd";
+/**
+ * Fetched through this app's own route, not from CoinGecko directly.
+ *
+ * CoinGecko does not allow browser requests from arbitrary origins, so calling it from the
+ * page logged a CORS failure on every load and never produced a price. The route at
+ * `app/api/hbar-price` makes the same request from the server.
+ */
+export const HBAR_PRICE_URL = "/api/hbar-price";
 
 type HbarPriceCache = {
   price: number;
@@ -34,7 +41,7 @@ export async function fetchHbarPrice(): Promise<number> {
     }
 
     const data = await response.json();
-    const price = data?.["hedera-hashgraph"]?.usd ?? 0;
+    const price = Number(data?.price ?? 0);
 
     if (price > 0) {
       cache = { price, timestamp: now };

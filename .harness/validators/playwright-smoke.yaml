@@ -15,11 +15,13 @@ routes:
   - path: /markets
     expect:
       # The table and its headers render whether or not any market is tradeable.
-      visibleText: ["Markets", "State", "Min notional"]
+      visibleText: ["Markets", "State", "Min notional", "24h volume"]
   - path: /market/3
     expect:
       # Market rules come from /books, so they are present even when the book is empty.
-      visibleText: ["Order book", "Market rules", "Tick size", "Recent trades"]
+      # Section headings are uppercased by CSS and innerText returns the transformed text,
+      # so these deliberately match label text that is not transformed.
+      visibleText: ["Tick size", "Min notional", "Lot size", "Maker fee"]
   - path: /market/999999
     expect:
       visibleText: ["Market not found"]
