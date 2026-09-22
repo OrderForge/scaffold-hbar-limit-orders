@@ -112,8 +112,27 @@ const MarketPage = () => {
 
   if (bookLoading) {
     return (
-      <div className="flex justify-center p-16">
-        <span className="loading loading-spinner loading-lg" />
+      <div className="mx-auto w-full max-w-7xl px-4 py-8">
+        <h1 className="text-2xl font-bold">Market {orderbookId}</h1>
+        <div className="mt-6 grid gap-6 lg:grid-cols-[2fr_1fr]">
+          <div className="flex flex-col gap-4">
+            <div className="rounded-box bg-base-100 p-4">
+              <h2 className="text-sm font-semibold uppercase tracking-wide opacity-70">Order book</h2>
+              <div className="flex justify-center p-12">
+                <span className="loading loading-spinner loading-lg" />
+              </div>
+            </div>
+            <div className="rounded-box bg-base-100 p-4">
+              <h2 className="text-sm font-semibold uppercase tracking-wide opacity-70">Recent trades</h2>
+            </div>
+          </div>
+          <div className="rounded-box bg-base-100 p-4">
+            <h2 className="text-sm font-semibold uppercase tracking-wide opacity-70">Market rules</h2>
+            <p className="mt-2 text-xs opacity-60">
+              Tick size, lot size and the minimum notional load with the market.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }

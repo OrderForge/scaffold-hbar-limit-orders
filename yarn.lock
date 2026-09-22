@@ -3608,6 +3608,7 @@ __metadata:
     next: ^15.2.8
     next-nprogress-bar: ^2.3.13
     next-themes: ^0.4.6
+    playwright: ^1.63.0
     postcss: ^8.4.45
     prettier: ^3.5.3
     qrcode.react: ^4.0.1
@@ -11172,6 +11173,7 @@ __metadata:
   dependencies:
     husky: ^9.1.6
     lint-staged: ^15.2.10
+    playwright: ^1.63.0
   languageName: unknown
   linkType: soft
 
@@ -12744,6 +12746,26 @@ __metadata:
   bin:
     pino: bin.js
   checksum: b919e7dbe41de978bb050dcef94fd687c012eb78d344a18f75f04ce180d5810fc162be1f136722d70cd005ed05832c4023a38b9acbc1076ae63c9f5ec5ca515c
+  languageName: node
+  linkType: hard
+
+"playwright-core@npm:1.63.0":
+  version: 1.63.0
+  resolution: "playwright-core@npm:1.63.0"
+  bin:
+    playwright-core: cli.js
+  checksum: b4c190c4099d0620a9ba22a0e826194ad511c3149153a79c44dc632ac2058da7da01cf66f011ee3ee0f360bbd83aa2f67f04519eb3c7c2bea257c4f598537937
+  languageName: node
+  linkType: hard
+
+"playwright@npm:^1.63.0":
+  version: 1.63.0
+  resolution: "playwright@npm:1.63.0"
+  dependencies:
+    playwright-core: 1.63.0
+  bin:
+    playwright: cli.js
+  checksum: 6f90bca3d61f509667b9fdc4ef9c845833e4cb3cbb1c0d4e26672efb66b97b7f7db47d6a947a66772a23c191859639a6db0211c7753e6a1a5bc42293fd226c5a
   languageName: node
   linkType: hard
 

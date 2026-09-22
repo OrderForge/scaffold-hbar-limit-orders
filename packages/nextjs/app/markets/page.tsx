@@ -88,15 +88,9 @@ const Markets = () => {
         </div>
       )}
 
-      {isLoading && (
-        <div className="flex justify-center p-12">
-          <span className="loading loading-spinner loading-lg" />
-        </div>
-      )}
-
       {books && books.length === 0 && <p className="p-12 text-center opacity-70">This network lists no markets.</p>}
 
-      {books && books.length > 0 && (
+      {(isLoading || (books && books.length > 0)) && (
         <div className="overflow-x-auto rounded-box bg-base-100">
           <table className="table">
             <thead>
@@ -113,9 +107,15 @@ const Markets = () => {
               </tr>
             </thead>
             <tbody>
-              {books.map(book => (
-                <MarketRow key={book.id} book={book} />
-              ))}
+              {isLoading ? (
+                <tr>
+                  <td colSpan={9} className="p-8 text-center">
+                    <span className="loading loading-spinner loading-md" />
+                  </td>
+                </tr>
+              ) : (
+                books?.map(book => <MarketRow key={book.id} book={book} />)
+              )}
             </tbody>
           </table>
         </div>

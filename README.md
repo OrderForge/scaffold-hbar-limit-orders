@@ -102,6 +102,28 @@ journal without sending it anywhere.
 | Permit2 onboarding (4 transactions) | [SAUCE→Permit2](https://hashscan.io/testnet/transaction/0x490de469a1d0f08a825a80a79c8c6b12a9ca840939ea6f7239831fdffda37083), [Permit2→reactor](https://hashscan.io/testnet/transaction/0x0e9462293d2374b80222f2dba26b6868a538899cb34d5682e5ca49135de2379d), [USDC→Permit2](https://hashscan.io/testnet/transaction/0xdfa33dfdba54534f33d37987224a4ad6d89b9db4f1e1a729c99e2148f031a512), [Permit2→reactor](https://hashscan.io/testnet/transaction/0x488f4b370b19eaf740be8f7293cf35cd06f38bd0ccb4ca3a52f0d815f6d8c994) |
 | Order placed and cancelled | order 3494124 on book 3, 2026-09-19 |
 
+## Modes
+
+The template reads market data from either network, and which one it uses is decided by
+configuration alone — no code changes.
+
+| Mode | How | When to use it |
+| --- | --- | --- |
+| **Testnet-live** (default) | `NEXT_PUBLIC_CLOB_NETWORK=testnet` | Normal development. Trade with faucet HBAR and test tokens from `yarn clob:fund`. |
+| **Mainnet-read** | `NEXT_PUBLIC_CLOB_NETWORK=mainnet`, or the toggle on the markets page | When testnet markets are closed or halted — which is common. Reading mainnet prices moves no funds. |
+| **Custom endpoint** | `NEXT_PUBLIC_CLOB_API_URL=<your proxy>` | Pointing at a proxy, a mirror of the API, or a local fake for tests. |
+
+The honest trade-off with mainnet-read: **market data and trading can be on different
+networks**, which is confusing enough to be dangerous. So the app does not allow it
+silently — once a wallet is connected the viewed network follows the wallet, and
+deliberately reading the other network marks everything wallet-related read-only until the
+two agree.
+
+Testnet liquidity is thin. At the time of writing, testnet has one market that has ever
+been open (book 3, SAUCE/USDC) and it has been halted since 2026-09-20, which is exactly
+why the mainnet-read mode exists and why the app renders halted and empty books as
+first-class states rather than errors.
+
 ## Prerequisites
 
 - Node.js ≥ 20.18.3, Git
