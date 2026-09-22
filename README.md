@@ -9,9 +9,10 @@ Scaffold it:
 npm create scaffold-hbar@latest --template OrderForge/scaffold-hbar-limit-orders
 ```
 
-> **Status:** the market terminal, onboarding, the HCS journal, wallet login, order placement and
-> cancellation, and fill verification are all implemented. Remaining: the live depth WebSocket, the
-> `clob:doctor` conformance check, and the docs pass — see `.harness/prds/`.
+> **Status:** complete and working — market terminal, onboarding, wallet login, order placement and
+> cancellation, the HCS journal, and on-chain fill verification. The live depth WebSocket is the one
+> planned piece not built: both SaucerSwap streams require a JWT, so the keyless terminal polls instead,
+> which is documented rather than hidden. See [docs/microstructure.md](docs/microstructure.md#depth-reconciliation-why-a-snapshot-is-not-enough).
 
 ## Disclaimer
 
@@ -76,7 +77,7 @@ template verifies the second part and is explicit about the first.
 | HCS journal | `packages/nextjs/lib/journal/` + `app/api/journal` (the only place holding a Hedera key) |
 | Order build/sign/cancel | `packages/nextjs/lib/clob/orders.ts` |
 | Fill verification | `packages/nextjs/lib/verify/fills.ts` |
-| Scripts | `packages/hardhat/scripts/` — `clob:bootstrap`, `clob:fund`, `clob:status`; `clob:doctor` _(coming)_ |
+| Scripts | `packages/hardhat/scripts/` — `clob:bootstrap`, `clob:fund`, `clob:status`, `clob:doctor` |
 
 ## Full setup (for the on-chain half)
 
@@ -192,23 +193,70 @@ yarn format
 yarn clob:bootstrap             # create the HCS journal topic (idempotent)
 yarn clob:status                # check API, contracts, operator and journal
 yarn clob:fund --hbar 20        # swap HBAR into a market's tokens
+yarn clob:doctor                # check the live API still matches what this was built against
+yarn lint:wording               # fail the build if the docs claim more than the design backs
 ```
 
 ## Project structure
 
 ```
 packages/hardhat/
-  scripts/       account tooling, generateTsAbis.ts, and the clob:* scripts (coming)
+  scripts/       account tooling, generateTsAbis.ts, and clob:bootstrap/status/fund/doctor
   deploy/        hardhat-deploy scripts
 packages/nextjs/
-  app/           markets terminal (coming), debug, api routes
-  components/    scaffold-hbar wallet + address components
-  hooks/         scaffold-hbar contract hooks
-  lib/           clob / mirror / journal / verify (coming)
-  utils/hedera/  tinybar-wei conversion, shared constants
-  contracts/     deployedContracts.ts (generated), externalContracts.ts (manual)
+  app/           markets, market/[id], orders, journal, debug, and the API routes
+  app/api/clob/  same-origin proxy for the Orderbook API (it sends no CORS headers)
+  app/api/journal/  the only place holding a Hedera key; writes one topic message
+  components/clob/  terminal, checklist, order entry, fill checks
+  hooks/clob/    network, auth, market data, onboarding, placement
+  lib/clob/      config, types, http, format (money), depth, orders, auth
+  lib/hedera/    the six onboarding steps, derived from chain reads
+  lib/journal/   HCS order-intent records
+  lib/verify/    fill verification against the signed order
+  test/          127 unit tests, offline against fixtures captured from the live API
+docs/            microstructure, integration, hedera, discrepancies
 .harness/        harness spec, increment PRDs, validators
 ```
+
+## Documentation
+
+| Guide | What is in it |
+| --- | --- |
+| [docs/microstructure.md](docs/microstructure.md) | Tick and lot grids, the minimum-notional units trap, pips vs basis points, crossed books, AMM routing, and how depth is reconciled. Read this one if you read only one. |
+| [docs/integration.md](docs/integration.md) | The endpoint map as the API really behaves, both auth schemes, the order-placing details that each cost an order if missed, and what to copy into your own client. |
+| [docs/hedera.md](docs/hedera.md) | The trust boundary, each Hedera service and its job, and what fill verification does and does not prove. |
+| [docs/DISCREPANCIES.md](docs/DISCREPANCIES.md) | Thirteen places where the live API differs from its own documentation, each handled in code. |
+| [AGENTS.md](AGENTS.md) | For coding agents: key paths, the money rules, and the mistakes that are easy to make here. |
+
+## What this does not do
+
+- **No AMM swaps, liquidity provision, farming or staking.** This is the order book only. `clob:fund`
+  uses the V1 router to buy test tokens, and that is the extent of it.
+- **No trading strategy, portfolio or P&L.** It places the order you ask for.
+- **No live depth stream.** Both SaucerSwap WebSockets require a JWT, so a keyless terminal cannot use
+  them. Depth polls every 1.5 seconds and the UI shows how fresh it is.
+- **No proof that the venue treated you fairly.** Matching is off-chain. The template verifies settlement
+  against your signed order and is explicit that ordering, acceptance and latency are not observable.
+- **Cancellation is not instant.** A `202` is an acknowledgement; the UI says "cancel requested" until the
+  order's history confirms it, because an order that is still live can still fill.
+- **Keyless market data is a rollout, not a guarantee.** If a network has not had it yet, public reads
+  answer `401` and the app says so instead of showing a login prompt nobody can satisfy.
+
+## Harness
+
+The [Hedera Harness](https://www.npmjs.com/package/hedera-harness) recipe lives in `.harness/`: the spec,
+five increment PRDs, the static and command validators, a browser smoke test, and an acceptance contract.
+
+```bash
+npx playwright install chromium   # the Tier 2 gate needs a browser
+npx hedera-harness validate
+```
+
+All seven commands pass (install, wording, lint, compile, both test suites, build), the static validator
+and secret scan are clean on a fresh clone, and the browser smoke test passes 6/6 routes with no console
+errors. The smoke test deliberately asserts on structure rather than market data: an earlier version
+looked for bid and ask rows, which would have failed the moment testnet halted — testing the venue rather
+than the template.
 
 ## Troubleshooting
 
@@ -216,6 +264,11 @@ packages/nextjs/
 
 Set `NEXT_PUBLIC_HEDERA_TESTNET_RPC_URL` in `packages/nextjs/.env` to a CORS-enabled endpoint (for example
 [Arkhia](https://arkhia.io/)), or rely on wallet-connected operations, since wallets handle RPC internally.
+
+### The journal page is empty
+
+A topic id exists on one network only. If you are reading a different network than the topic was created
+on, the page says so — set `NEXT_PUBLIC_JOURNAL_NETWORK` to match.
 
 ### Deployer shows an EVM address, not a Hedera account id
 
