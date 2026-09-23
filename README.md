@@ -3,28 +3,36 @@
 Add non-custodial limit orders from SaucerSwap's order book to any Hedera app, with every fill verified
 on-chain against what you signed.
 
-Scaffold it:
-
 ```bash
 npm create scaffold-hbar@latest --template OrderForge/scaffold-hbar-limit-orders
 ```
 
 > **Status:** complete and working — market terminal, live depth over WebSocket, onboarding, wallet
 > login, order placement and cancellation, the HCS journal, and on-chain fill verification.
+>
+> **Disclaimer:** this template is **experimental** and **not audited**. It places orders against a
+> third-party venue and defaults to Hedera **testnet**. Read SaucerSwap's
+> [Risk Notice](https://docs.saucerswap.finance/legal/orderbook-risk-notice) and
+> [Terms](https://docs.saucerswap.finance/legal/terms-of-service) before trading real funds.
 
 ![The markets list: live order books with state, fees as percentages, and each market's trading rules](docs/images/markets.png)
 
 <p align="center"><em>Live mainnet markets. No wallet, no API key, no deployed contract.</em></p>
 
-## Disclaimer
+## Contents
 
-This template — contracts, frontend and tooling — is **experimental** and **not audited**. It places
-orders against a third-party venue, and defaults to Hedera **testnet**. Do not use it in production
-without your own security review, and read SaucerSwap's
-[V3 Orderbook Risk Notice](https://docs.saucerswap.finance/legal/orderbook-risk-notice) and
-[Terms of Service](https://docs.saucerswap.finance/legal/terms-of-service) before trading real funds.
+1. [Run it in 60 seconds](#run-it-in-60-seconds) — no keys, no wallet
+2. [What you get](#what-you-get) — and what you still trust the venue for
+3. [See it working](#see-it-working) — the wallet half, in pictures
+4. [How it works](#how-it-works) — architecture, the order path, where each piece lives
+5. [Set up the on-chain half](#set-up-the-on-chain-half) — keys, journal topic, test tokens
+6. [Configuration](#configuration) — [modes](#modes), networks, environment
+7. [Reference](#reference) — commands, layout, wallet setup, units
+8. [Documentation](#documentation) — the four guides, and which to read first
+9. [What this does not do](#what-this-does-not-do)
+10. [Troubleshooting](#troubleshooting)
 
-## 60-second demo, no keys
+## Run it in 60 seconds
 
 ```bash
 yarn install
@@ -37,23 +45,25 @@ endpoints: no wallet, no API key, no deployed contract.
 Testnet markets are thin and often halted, so the terminal has a **Testnet / Mainnet** toggle for market
 data. Reading mainnet prices moves no funds; wallet actions stay on your wallet's own network.
 
+![A market page: depth ladder with cumulative bars, spread readout, trade tape and the market's rules](docs/images/market.png)
+
+<p align="center"><em>HBAR/USDC on mainnet: 103 levels of real depth, the spread, and a trade tape linked
+to settlement transactions.</em></p>
+
 > **Why requests go through this app's own `/api/clob` route:** the Orderbook API sends no CORS headers,
 > so a browser cannot call it directly however public the endpoint is — it is built for server-side
 > clients. The app forwards the request from its server instead. The proxy holds no credentials. See
 > [docs/DISCREPANCIES.md](docs/DISCREPANCIES.md).
 
-![A market page: depth ladder with cumulative bars, spread readout, trade tape and the market's rules](docs/images/market.png)
-
-<p align="center"><em>HBAR/USDC on mainnet: depth ladder, spread, trade tape linked to settlement transactions,
-and the six-step readiness checklist.</em></p>
-
-## What this is
+## What you get
 
 SaucerSwap runs a central limit order book (V3) on Hedera, separate from its AMM pools. It has a public
 HTTP API and **no published client library**. This template is that client, plus a working UI on top of it.
 
 - **Market data** — books, depth, the trade tape and quotes, with each market's trading rules (tick, size
   step, lot, minimum notional) applied correctly.
+- **Live depth** — the WebSocket with snapshot-and-diff reconciliation, re-syncing on any gap, falling
+  back to polling when it cannot connect.
 - **Onboarding** — before it can trade, a Hedera account must associate the tokens (HTS), approve them
   to Permit2, and approve the reactor inside Permit2. The template detects each step, does it in one
   click, and re-checks the result against the chain rather than trusting the receipt.
@@ -72,7 +82,34 @@ order in which orders match and whether your order is accepted at all. What the 
 that no fill can break the terms you signed, and that you can cancel on-chain without asking anyone. This
 template verifies the second part and is explicit about the first.
 
-## Architecture
+## See it working
+
+Connect a wallet and the app follows **its** network, because an approval signed on one chain says
+nothing about the other. The readiness checklist is derived from the chain — the mirror node and the
+contracts — rather than from the venue's view of your account.
+
+![A market page with a wallet connected: depth streaming over the WebSocket, and all six onboarding steps green](docs/images/wallet.png)
+
+<p align="center"><em>Signed in: depth switches from polling to the WebSocket, and the six on-chain
+onboarding steps are checked against the chain. This market is halted, which the page says plainly
+rather than hiding.</em></p>
+
+Signing in exchanges a wallet signature for a short-lived API token, which never leaves memory.
+
+![The orders page, signed in, showing a past order with its status and history](docs/images/orders.png)
+
+<p align="center"><em>Your orders, read from SaucerSwap with a token held in memory only. Every fill is
+checked against the order you signed.</em></p>
+
+![The journal page listing signed intents with their consensus timestamps and EIP-712 digests](docs/images/journal.png)
+
+<p align="center"><em>Each signed intent, on an HCS topic, ordered by consensus rather than by the venue.
+The digest is what links an intent to the settlement that follows.</em></p>
+
+These frames are scripted — `yarn clob:shots` re-captures them from the running app — so they cannot
+quietly drift from what the code does.
+
+## How it works
 
 ```mermaid
 flowchart LR
@@ -121,7 +158,8 @@ The highlighted box is the one part nobody can verify: matching happens off-chai
 SaucerSwap's filler can settle an order. Everything else is in your browser, on your own
 server, or on Hedera where anyone can check it.
 
-### Placing an order, end to end
+<details>
+<summary><strong>Placing an order, end to end</strong> — the full sequence</summary>
 
 ```mermaid
 sequenceDiagram
@@ -153,6 +191,8 @@ sequenceDiagram
 
 See [docs/hedera.md](docs/hedera.md#the-trust-boundary) for what each guarantee rests on.
 
+</details>
+
 | Piece | Where |
 | --- | --- |
 | Typed API client | `packages/nextjs/lib/clob/` |
@@ -167,7 +207,7 @@ See [docs/hedera.md](docs/hedera.md#the-trust-boundary) for what each guarantee 
 | EIP-712 digest parity | `packages/hardhat/contracts/OrderDigest.sol` — the order type written a second time, in Solidity, so a transcription error fails a test |
 | Scripts | `packages/hardhat/scripts/` — `clob:bootstrap`, `clob:fund`, `clob:status`, `clob:doctor` |
 
-## Full setup (for the on-chain half)
+## Set up the on-chain half
 
 ```bash
 yarn hardhat:account:generate        # or bring your own ECDSA key
@@ -191,7 +231,9 @@ journal without sending it anywhere.
 | Permit2 onboarding (4 transactions) | [SAUCE→Permit2](https://hashscan.io/testnet/transaction/0x490de469a1d0f08a825a80a79c8c6b12a9ca840939ea6f7239831fdffda37083), [Permit2→reactor](https://hashscan.io/testnet/transaction/0x0e9462293d2374b80222f2dba26b6868a538899cb34d5682e5ca49135de2379d), [USDC→Permit2](https://hashscan.io/testnet/transaction/0xdfa33dfdba54534f33d37987224a4ad6d89b9db4f1e1a729c99e2148f031a512), [Permit2→reactor](https://hashscan.io/testnet/transaction/0x488f4b370b19eaf740be8f7293cf35cd06f38bd0ccb4ca3a52f0d815f6d8c994) |
 | Order placed and cancelled | order 3494124 on book 3, 2026-09-19 |
 
-## Modes
+## Configuration
+
+### Modes
 
 The template reads market data from either network, and which one it uses is decided by
 configuration alone — no code changes.
@@ -213,18 +255,8 @@ been open (book 3, SAUCE/USDC) and it has been halted since 2026-09-20, which is
 why the mainnet-read mode exists and why the app renders halted and empty books as
 first-class states rather than errors.
 
-## Prerequisites
-
-- Node.js ≥ 20.18.3, Git
-- Yarn 3 — the repo pins it. If `yarn` is missing, enable Node's bundled Corepack once:
-  `corepack enable`. No global install and no sudo needed. If you would rather not touch
-  your global setup, the repo carries its own copy: `node .yarn/releases/yarn-3.2.3.cjs <command>`
-- A Hedera-compatible wallet for the on-chain steps — [MetaMask](https://metamask.io/) or
-  [HashPack](https://www.hashpack.app/). Market data needs none.
-- [WalletConnect project ID](https://cloud.reown.com) in `packages/nextjs/.env` (a shared fallback works
-  for local demos)
-
-## Environment
+<details>
+<summary><strong>Environment variables</strong></summary>
 
 Copy `packages/hardhat/.env.example` → `packages/hardhat/.env` and `packages/nextjs/.env.example` →
 `packages/nextjs/.env`. No secret is needed for market data.
@@ -237,36 +269,16 @@ Copy `packages/hardhat/.env.example` → `packages/hardhat/.env` and `packages/n
 | `NEXT_PUBLIC_DEFAULT_ORDERBOOK_ID` | frontend | Market shown by default |
 | `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` | frontend | WalletConnect project id |
 | `NEXT_PUBLIC_JOURNAL_TOPIC_ID` | frontend | HCS topic the journal reads |
+| `NEXT_PUBLIC_ENABLE_BURNER_WALLET` | frontend | `false` turns off the built-in burner wallet, which otherwise connects by itself |
 | `JOURNAL_TOPIC_ID` | server | HCS topic the journal writes to |
 | `HEDERA_OPERATOR_ID` / `HEDERA_OPERATOR_KEY` | server | Pays for journal messages. **Never** prefix the key with `NEXT_PUBLIC_` |
 | `DEPLOYER_PRIVATE_KEY` | hardhat | Only for the on-chain scripts; never committed |
 
-## Wallet setup (only needed for on-chain steps)
+</details>
 
-**MetaMask — Hedera Testnet**
+## Reference
 
-| Field | Value |
-| --- | --- |
-| Network Name | Hedera Testnet |
-| RPC URL | `https://testnet.hashio.io/api` |
-| Chain ID | `296` |
-| Currency Symbol | HBAR |
-| Explorer | `https://hashscan.io/testnet` |
-
-Fund it from the [Hedera Portal faucet](https://portal.hedera.com/faucet). EIP-712 order signing needs an
-**ECDSA** account, since ED25519 accounts have no EVM address.
-
-## Hedera value handling
-
-| Context | Unit | 1 HBAR equals |
-| --- | --- | --- |
-| JSON-RPC (sending a tx) | wei | 10^18 |
-| Contract `msg.value` | tinybars | 10^8 |
-| Conversion | 1 tinybar = 10^10 wei | |
-
-`packages/nextjs/utils/hedera/valueConversion.ts` is the only place that converts.
-
-## Commands
+### Commands
 
 ```bash
 yarn next:dev                   # frontend, hot reload
@@ -283,14 +295,61 @@ yarn clob:status                # check API, contracts, operator and journal
 yarn clob:fund --hbar 20        # swap HBAR into a market's tokens
 yarn clob:doctor                # check the live API still matches what this was built against
 yarn clob:demo                  # record a walkthrough of the running app
+yarn clob:shots                 # re-capture the README screenshots
 yarn lint:wording               # fail the build if the docs claim more than the design backs
 ```
 
-## Project structure
+<details>
+<summary><strong>Prerequisites</strong></summary>
+
+- Node.js ≥ 20.18.3, Git
+- Yarn 3 — the repo pins it. If `yarn` is missing, enable Node's bundled Corepack once:
+  `corepack enable`. No global install and no sudo needed. If you would rather not touch
+  your global setup, the repo carries its own copy: `node .yarn/releases/yarn-3.2.3.cjs <command>`
+- A Hedera-compatible wallet for the on-chain steps — [MetaMask](https://metamask.io/) or
+  [HashPack](https://www.hashpack.app/). Market data needs none.
+- [WalletConnect project ID](https://cloud.reown.com) in `packages/nextjs/.env` (a shared fallback works
+  for local demos)
+
+</details>
+
+<details>
+<summary><strong>Wallet setup</strong> — only needed for on-chain steps</summary>
+
+**MetaMask — Hedera Testnet**
+
+| Field | Value |
+| --- | --- |
+| Network Name | Hedera Testnet |
+| RPC URL | `https://testnet.hashio.io/api` |
+| Chain ID | `296` |
+| Currency Symbol | HBAR |
+| Explorer | `https://hashscan.io/testnet` |
+
+Fund it from the [Hedera Portal faucet](https://portal.hedera.com/faucet). EIP-712 order signing needs an
+**ECDSA** account, since ED25519 accounts have no EVM address.
+
+</details>
+
+<details>
+<summary><strong>Hedera value handling</strong> — three units, one converter</summary>
+
+| Context | Unit | 1 HBAR equals |
+| --- | --- | --- |
+| JSON-RPC (sending a tx) | wei | 10^18 |
+| Contract `msg.value` | tinybars | 10^8 |
+| Conversion | 1 tinybar = 10^10 wei | |
+
+`packages/nextjs/utils/hedera/valueConversion.ts` is the only place that converts.
+
+</details>
+
+<details>
+<summary><strong>Project structure</strong></summary>
 
 ```
 packages/hardhat/
-  scripts/       account tooling, generateTsAbis.ts, and clob:bootstrap/status/fund/doctor
+  scripts/       account tooling, generateTsAbis.ts, and clob:bootstrap/status/fund/doctor/shots
   deploy/        hardhat-deploy scripts
 packages/nextjs/
   app/           markets, market/[id], orders, journal, debug, and the API routes
@@ -298,22 +357,43 @@ packages/nextjs/
   app/api/journal/  the only place holding a Hedera key; writes one topic message
   components/clob/  terminal, checklist, order entry, fill checks
   hooks/clob/    network, auth, market data, onboarding, placement
-  lib/clob/      config, types, http, format (money), depth, orders, auth
+  lib/clob/      config, types, http, format (money), depth, depthStream, orders, auth
   lib/hedera/    the six onboarding steps, derived from chain reads
   lib/journal/   HCS order-intent records
   lib/verify/    fill verification against the signed order
-  test/          127 unit tests, offline against fixtures captured from the live API
+  test/          149 unit tests, offline against fixtures captured from the live API
 docs/            microstructure, integration, hedera, discrepancies
 .harness/        harness spec, increment PRDs, validators
 ```
+
+</details>
+
+<details>
+<summary><strong>Harness</strong> — the Hedera Harness recipe and its gates</summary>
+
+The [Hedera Harness](https://www.npmjs.com/package/hedera-harness) recipe lives in `.harness/`: the spec,
+five increment PRDs, the static and command validators, a browser smoke test, and an acceptance contract.
+
+```bash
+npx playwright install chromium   # the Tier 2 gate needs a browser
+npx hedera-harness validate
+```
+
+All seven commands pass (install, wording, lint, compile, both test suites, build), the static validator
+and secret scan are clean on a fresh clone, and the browser smoke test passes 6/6 routes with no console
+errors. The smoke test deliberately asserts on structure rather than market data: an earlier version
+looked for bid and ask rows, which would have failed the moment testnet halted — testing the venue rather
+than the template.
+
+</details>
 
 ## Documentation
 
 | Guide | What is in it |
 | --- | --- |
-| [docs/microstructure.md](docs/microstructure.md) | Tick and lot grids, the minimum-notional units trap, pips vs basis points, crossed books, AMM routing, and how depth is reconciled. Read this one if you read only one. |
+| [docs/microstructure.md](docs/microstructure.md) | Tick and lot grids, the minimum-notional units trap, pips vs basis points, crossed books, AMM routing, and how depth is reconciled. **Read this one if you read only one.** |
 | [docs/integration.md](docs/integration.md) | The endpoint map as the API really behaves, both auth schemes, the order-placing details that each cost an order if missed, and what to copy into your own client. |
-| [docs/hedera.md](docs/hedera.md) | The trust boundary, each Hedera service and its job, and what fill verification does and does not prove. |
+| [docs/hedera.md](docs/hedera.md) | The trust boundary, each Hedera service and its job, why an address is not yet an account, and what fill verification does and does not prove. |
 | [docs/DISCREPANCIES.md](docs/DISCREPANCIES.md) | Thirteen places where the live API differs from its own documentation, each handled in code. |
 | [AGENTS.md](AGENTS.md) | For coding agents: key paths, the money rules, and the mistakes that are easy to make here. |
 
@@ -335,38 +415,21 @@ docs/            microstructure, integration, hedera, discrepancies
 - **Keyless market data is a rollout, not a guarantee.** If a network has not had it yet, public reads
   answer `401` and the app says so instead of showing a login prompt nobody can satisfy.
 
-## Harness
-
-The [Hedera Harness](https://www.npmjs.com/package/hedera-harness) recipe lives in `.harness/`: the spec,
-five increment PRDs, the static and command validators, a browser smoke test, and an acceptance contract.
-
-```bash
-npx playwright install chromium   # the Tier 2 gate needs a browser
-npx hedera-harness validate
-```
-
-All seven commands pass (install, wording, lint, compile, both test suites, build), the static validator
-and secret scan are clean on a fresh clone, and the browser smoke test passes 6/6 routes with no console
-errors. The smoke test deliberately asserts on structure rather than market data: an earlier version
-looked for bid and ask rows, which would have failed the moment testnet halted — testing the venue rather
-than the template.
-
 ## Troubleshooting
 
-### CORS errors with hashio.io RPC
+**The readiness checklist says the address has no account.** On Hedera an address exists once it has
+received HBAR, and not before. Fund it from the [faucet](https://portal.hedera.com/faucet) and the six
+steps appear. The built-in burner wallet always starts in this state.
 
-Set `NEXT_PUBLIC_HEDERA_TESTNET_RPC_URL` in `packages/nextjs/.env` to a CORS-enabled endpoint (for example
-[Arkhia](https://arkhia.io/)), or rely on wallet-connected operations, since wallets handle RPC internally.
+**CORS errors with hashio.io RPC.** Set `NEXT_PUBLIC_HEDERA_TESTNET_RPC_URL` in `packages/nextjs/.env`
+to a CORS-enabled endpoint (for example [Arkhia](https://arkhia.io/)), or rely on wallet-connected
+operations, since wallets handle RPC internally.
 
-### The journal page is empty
+**The journal page is empty.** A topic id exists on one network only. If you are reading a different
+network than the topic was created on, the page says so — set `NEXT_PUBLIC_JOURNAL_NETWORK` to match.
 
-A topic id exists on one network only. If you are reading a different network than the topic was created
-on, the page says so — set `NEXT_PUBLIC_JOURNAL_NETWORK` to match.
-
-### Deployer shows an EVM address, not a Hedera account id
-
-`yarn hardhat:account:generate` prints the `0x…` form. Both that and `0.0.xxxxx` work with the
-[faucet](https://portal.hedera.com/faucet).
+**Deployer shows an EVM address, not a Hedera account id.** `yarn hardhat:account:generate` prints the
+`0x…` form. Both that and `0.0.xxxxx` work with the [faucet](https://portal.hedera.com/faucet).
 
 ## Links
 

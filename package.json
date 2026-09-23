@@ -11,6 +11,7 @@
   "scripts": {
     "clob:bootstrap": "yarn workspace @sh/hardhat clob:bootstrap",
     "clob:demo": "yarn workspace @sh/hardhat clob:demo",
+    "clob:shots": "yarn workspace @sh/hardhat clob:shots",
     "clob:doctor": "yarn workspace @sh/hardhat clob:doctor",
     "clob:fund": "yarn workspace @sh/hardhat clob:fund",
     "clob:status": "yarn workspace @sh/hardhat clob:status",

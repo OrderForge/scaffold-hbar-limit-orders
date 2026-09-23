@@ -44,7 +44,15 @@ export class MirrorClient {
     return `${this.config.mirrorUrl}/api/v1${path}`;
   }
 
-  /** Accepts a `0.0.x` id or an EVM address — the mirror node resolves both. */
+  /**
+   * Accepts a `0.0.x` id or an EVM address — the mirror node resolves both.
+   *
+   * Null means **404**, and only that: the account has no record, which on Hedera means
+   * it has never received HBAR. Every other failure throws. Swallowing them all would be
+   * worse than useless here, because callers show "this address has no account yet" —
+   * and a rate limit, an outage or a cancelled request would then be reported to the user
+   * as a fact about their wallet.
+   */
   async getAccount(accountIdOrEvm: string, signal?: AbortSignal): Promise<MirrorAccount | null> {
     try {
       const payload = await request<any>(this.url(`/accounts/${accountIdOrEvm}`), {
@@ -58,9 +66,9 @@ export class MirrorClient {
         maxAutomaticTokenAssociations: payload.max_automatic_token_associations ?? 0,
         keyType: payload.key?._type ?? null,
       };
-    } catch {
-      // A brand-new account that has never received funds is simply not there yet.
-      return null;
+    } catch (cause) {
+      if (cause instanceof ClobError && cause.status === 404) return null;
+      throw cause;
     }
   }
 
@@ -109,12 +117,19 @@ export class MirrorClient {
     }));
   }
 
-  /** Contract execution result with its logs — the basis for verifying a fill. */
+  /**
+   * Contract execution result with its logs — the basis for verifying a fill.
+   *
+   * Null means the mirror node has no result for that hash yet, which is normal for a few
+   * seconds after settlement. Other failures throw, so "not verified yet" is never
+   * confused with "could not reach the mirror node".
+   */
   async getContractResult(transactionHash: string, signal?: AbortSignal): Promise<any | null> {
     try {
       return await request<any>(this.url(`/contracts/results/${transactionHash}`), { cacheMs: CACHE_MS.token, signal });
-    } catch {
-      return null;
+    } catch (cause) {
+      if (cause instanceof ClobError && cause.status === 404) return null;
+      throw cause;
     }
   }
 }

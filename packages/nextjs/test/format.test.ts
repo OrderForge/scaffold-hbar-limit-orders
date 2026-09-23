@@ -189,6 +189,18 @@ describe("validateOrder", () => {
     expect(!result.ok && result.message).toContain("halted");
   });
 
+  it("checks only the order's shape when no market state is given", () => {
+    // The dry-run signer passes no market state on purpose: it sends nothing to the
+    // venue, so a halt has no bearing on whether an order can be signed and journalled.
+    // The same order is still rejected on a halted market where it would be submitted.
+    const { isMarketHalted, status, ...shapeOnly } = { ...rules, isMarketHalted: 1 };
+    void isMarketHalted;
+    void status;
+
+    expect(validateOrder({ price: "1", size: "10" }, shapeOnly)).toMatchObject({ ok: true });
+    expect(validateOrder({ price: "1", size: "7" }, shapeOnly)).toMatchObject({ ok: false });
+  });
+
   it("blocks a closed market", () => {
     expect(validateOrder({ price: "1", size: "10" }, { ...rules, status: "CLOSED" })).toMatchObject({
       ok: false,

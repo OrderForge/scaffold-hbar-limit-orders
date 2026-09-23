@@ -5,6 +5,7 @@ import { useClobAuth } from "./useClobAuth";
 import { useClobNetwork } from "./useClobNetwork";
 import { useResolveHederaAccountId } from "./useOnboarding";
 import { useQueryClient } from "@tanstack/react-query";
+import { hashTypedData } from "viem";
 import { useAccount, useSignTypedData } from "wagmi";
 import { getApiBase } from "~~/lib/clob/config";
 import { notional } from "~~/lib/clob/format";
@@ -83,7 +84,7 @@ export const usePlaceOrder = (market: Orderbook) => {
       const signable = toSignableOrder(built);
 
       setStage("signing");
-      const rawSignature = await signTypedDataAsync({
+      const typedData = {
         domain: {
           name: "PartialFillLimitOrderReactor",
           version: "1",
@@ -91,9 +92,11 @@ export const usePlaceOrder = (market: Orderbook) => {
           verifyingContract: built.info.reactor as `0x${string}`,
         },
         types: ORDER_TYPES,
-        primaryType: "PartialFillLimitOrder",
+        primaryType: "PartialFillLimitOrder" as const,
         message: signable,
-      });
+      };
+
+      const rawSignature = await signTypedDataAsync(typedData);
       const signature = withSignatureMode(rawSignature);
 
       setStage("journalling");
@@ -113,6 +116,9 @@ export const usePlaceOrder = (market: Orderbook) => {
             size,
             notional: notional(price, size, market.baseTokenDecimals, market.quoteTokenDecimals),
             nonce: String(built.info.nonce),
+            // The digest the wallet signed, so the journalled intent can be matched to a
+            // settlement later. The signature itself is never journalled.
+            eip712Hash: hashTypedData(typedData),
             submitted: true,
           }),
         );

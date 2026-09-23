@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { WalletGate } from "./WalletGate";
+import { hashTypedData } from "viem";
 import { useAccount, useSignTypedData } from "wagmi";
 import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
 import { useResolveHederaAccountId } from "~~/hooks/clob/useOnboarding";
@@ -66,6 +67,12 @@ export const DryRunSign = ({ market }: { market: Orderbook }) => {
   const [result, setResult] = useState<{ topicId: string; sequenceNumber: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // The market's own state is deliberately left out of this check. A dry run sends
+  // nothing to the venue, so whether the venue would accept the order does not bear on
+  // whether it can be signed and journalled — and testnet's one market has been halted
+  // for days, which would otherwise make this feature impossible to demonstrate. The
+  // note below still says a real order could not be submitted. `OrderEntry`, which does
+  // submit, keeps the full check.
   const validation = validateOrder(
     { price, size },
     {
@@ -75,8 +82,6 @@ export const DryRunSign = ({ market }: { market: Orderbook }) => {
       minNotional: market.minNotional,
       baseTokenDecimals: market.baseTokenDecimals,
       quoteTokenDecimals: market.quoteTokenDecimals,
-      status: market.status,
-      isMarketHalted: market.isMarketHalted,
     },
   );
 
@@ -123,7 +128,7 @@ export const DryRunSign = ({ market }: { market: Orderbook }) => {
         maxMakerFeePips: market.makerFeePips,
       };
 
-      const signature = await signTypedDataAsync({
+      const typedData = {
         domain: {
           name: domain.name,
           version: domain.version,
@@ -131,9 +136,11 @@ export const DryRunSign = ({ market }: { market: Orderbook }) => {
           verifyingContract: domain.verifyingContract as `0x${string}`,
         },
         types: ORDER_TYPES,
-        primaryType: "PartialFillLimitOrder",
+        primaryType: "PartialFillLimitOrder" as const,
         message,
-      });
+      };
+
+      const signature = await signTypedDataAsync(typedData);
 
       const intent = buildIntent({
         action: "place",
@@ -147,9 +154,10 @@ export const DryRunSign = ({ market }: { market: Orderbook }) => {
         price,
         size,
         notional: notional(price, size, market.baseTokenDecimals, market.quoteTokenDecimals),
-        // The signature itself is not journalled: the digest is what links an intent to a
-        // fill, and publishing a signature would let anyone replay a real order.
-        eip712Hash: null,
+        // The digest, not the signature: it is what links this intent to a settlement,
+        // and it reveals nothing, while publishing a signature would let anyone replay a
+        // real order.
+        eip712Hash: hashTypedData(typedData),
         submitted: false,
         dryRun: true,
       });

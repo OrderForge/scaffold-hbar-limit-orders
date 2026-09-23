@@ -11,6 +11,7 @@
     "clean": "hardhat clean",
     "clob:bootstrap": "ts-node --files ./scripts/bootstrap.ts",
     "clob:demo": "ts-node --files ./scripts/demo-video.ts",
+    "clob:shots": "ts-node --files ./scripts/screenshots.ts",
     "clob:doctor": "ts-node --files ./scripts/doctor.ts",
     "clob:fund": "ts-node --files ./scripts/fund.ts",
     "clob:status": "ts-node --files ./scripts/status.ts",
