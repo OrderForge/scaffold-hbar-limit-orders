@@ -9,10 +9,8 @@ Scaffold it:
 npm create scaffold-hbar@latest --template OrderForge/scaffold-hbar-limit-orders
 ```
 
-> **Status:** complete and working — market terminal, onboarding, wallet login, order placement and
-> cancellation, the HCS journal, and on-chain fill verification. The live depth WebSocket is the one
-> planned piece not built: both SaucerSwap streams require a JWT, so the keyless terminal polls instead,
-> which is documented rather than hidden. See [docs/microstructure.md](docs/microstructure.md#depth-reconciliation-why-a-snapshot-is-not-enough).
+> **Status:** complete and working — market terminal, live depth over WebSocket, onboarding, wallet
+> login, order placement and cancellation, the HCS journal, and on-chain fill verification.
 
 ![The markets list: live order books with state, fees as percentages, and each market's trading rules](docs/images/markets.png)
 
@@ -164,6 +162,7 @@ See [docs/hedera.md](docs/hedera.md#the-trust-boundary) for what each guarantee 
 | Onboarding checks | `packages/nextjs/lib/hedera/onboarding.ts` |
 | HCS journal | `packages/nextjs/lib/journal/` + `app/api/journal` (the only place holding a Hedera key) |
 | Order build/sign/cancel | `packages/nextjs/lib/clob/orders.ts` |
+| Live depth stream | `packages/nextjs/lib/clob/depthStream.ts` — buffer, snapshot, reconcile, re-sync on a gap |
 | Fill verification | `packages/nextjs/lib/verify/fills.ts` |
 | EIP-712 digest parity | `packages/hardhat/contracts/OrderDigest.sol` — the order type written a second time, in Solidity, so a transcription error fails a test |
 | Scripts | `packages/hardhat/scripts/` — `clob:bootstrap`, `clob:fund`, `clob:status`, `clob:doctor` |
@@ -326,8 +325,9 @@ docs/            microstructure, integration, hedera, discrepancies
 - **No deployed contracts of its own.** It integrates SaucerSwap's. The one contract here,
   `OrderDigest.sol`, is a test fixture: it recomputes the EIP-712 digest in Solidity so a
   drift between the client's type and the real one fails `yarn hardhat:test`.
-- **No live depth stream.** Both SaucerSwap WebSockets require a JWT, so a keyless terminal cannot use
-  them. Depth polls every 1.5 seconds and the UI shows how fresh it is.
+- **No live depth without signing in.** Both SaucerSwap WebSockets require a JWT, so a keyless visitor
+  cannot stream. Depth polls every 1.5 seconds instead, the UI says which it is using, and signing in
+  switches to the stream.
 - **No proof that the venue treated you fairly.** Matching is off-chain. The template verifies settlement
   against your signed order and is explicit that ordering, acceptance and latency are not observable.
 - **Cancellation is not instant.** A `202` is an acknowledgement; the UI says "cancel requested" until the

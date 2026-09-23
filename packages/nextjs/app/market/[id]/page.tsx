@@ -12,7 +12,9 @@ import { OrderEntry } from "~~/components/clob/OrderEntry";
 import { TradeTape } from "~~/components/clob/TradeTape";
 import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
 import { useChangedLevels, useSecondsSince } from "~~/hooks/clob/useFreshness";
-import { useBook, useDepth, useIsTabVisible, useTrades } from "~~/hooks/clob/useMarketData";
+import { useLiveDepth } from "~~/hooks/clob/useLiveDepth";
+import { LiveDepth } from "~~/hooks/clob/useLiveDepth";
+import { useBook, useIsTabVisible, useTrades } from "~~/hooks/clob/useMarketData";
 import { PublicReadUnavailableError } from "~~/lib/clob/errors";
 import { formatPercent, formatSmallestUnits, pipsToPercentLabel } from "~~/lib/clob/format";
 import { Orderbook, marketLabel, marketState } from "~~/lib/clob/types";
@@ -84,7 +86,18 @@ const MetadataPanel = ({ book }: { book: Orderbook }) => {
  * A thin market can hold the same best bid and ask for minutes. Without these, a working
  * feed looks frozen — the sequence number advances even when no price moves.
  */
-const Freshness = ({ updatedAt, live, sequence }: { updatedAt?: number; live: boolean; sequence?: number }) => {
+const Freshness = ({
+  updatedAt,
+  live,
+  sequence,
+  source,
+}: {
+  updatedAt?: number;
+  live: boolean;
+  sequence?: number;
+  /** Whether depth is streaming or polling, and why. */
+  source?: LiveDepth;
+}) => {
   const age = useSecondsSince(updatedAt);
   return (
     <div className="flex items-center gap-2 text-xs">
@@ -93,6 +106,22 @@ const Freshness = ({ updatedAt, live, sequence }: { updatedAt?: number; live: bo
         loading={updatedAt === undefined}
         label={age === null ? "live" : `updated ${age.toFixed(1)}s ago`}
       />
+      {source && (
+        <span
+          className={`badge badge-sm ${source.source === "stream" ? "badge-success" : "badge-ghost"}`}
+          title={
+            source.source === "stream"
+              ? `Live WebSocket. ${source.stream?.applied ?? 0} diffs applied${
+                  source.stream?.resyncs ? `, ${source.stream.resyncs} re-sync(s)` : ""
+                }.`
+              : source.stream?.status === "failed"
+                ? "The stream dropped, so the page fell back to polling."
+                : "Both SaucerSwap streams need a signed-in wallet, so this polls instead."
+          }
+        >
+          {source.source === "stream" ? "streaming" : "polling"}
+        </span>
+      )}
       {sequence !== undefined && (
         <span
           className="font-mono opacity-50"
@@ -113,9 +142,9 @@ const MarketPage = () => {
 
   const { data: book, isLoading: bookLoading, error: bookError } = useBook(orderbookId);
   const tradeable = book ? marketState(book) !== "CLOSED" : false;
-  const { data: depthResult, error: depthError, dataUpdatedAt } = useDepth(orderbookId, Boolean(book) && tradeable);
+  const live = useLiveDepth(orderbookId, Boolean(book) && tradeable);
   const { data: trades } = useTrades(orderbookId, 25, Boolean(book) && tradeable);
-  const changes = useChangedLevels(depthResult?.depth ?? null);
+  const changes = useChangedLevels(live.depth);
 
   if (bookLoading) {
     return (
@@ -177,7 +206,7 @@ const MarketPage = () => {
   if (!book) return null;
 
   const state = marketState(book);
-  const depth = depthResult?.depth ?? null;
+  const depth = live.depth;
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8">
@@ -195,7 +224,7 @@ const MarketPage = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Freshness updatedAt={dataUpdatedAt} live={visible} sequence={depth?.lastUpdateId} />
+          <Freshness updatedAt={live.updatedAt} live={visible} sequence={depth?.lastUpdateId} source={live} />
           <NetworkToggle />
         </div>
       </div>
@@ -215,9 +244,12 @@ const MarketPage = () => {
         </div>
       )}
 
-      {depthError && !(depthError instanceof PublicReadUnavailableError) && (
-        <div className="alert alert-error mb-4">
-          <span>Could not load depth: {(depthError as Error).message}</span>
+      {live.stream?.status === "failed" && (
+        <div className="alert mb-4">
+          <span>
+            The live depth stream dropped, so this page is polling instead. Nothing is lost — the book is still current,
+            just refreshed rather than streamed.
+          </span>
         </div>
       )}
 

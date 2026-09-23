@@ -157,11 +157,12 @@ const OrdersPage = () => {
         <div className="mt-12 rounded-box bg-base-200 p-8 text-center text-sm opacity-70">
           <p>No orders yet.</p>
           <p className="mt-1">
-            Order placement lands in the next increment. Until then,{" "}
+            Place one from a{" "}
             <Link href="/markets" className="link">
-              browse the markets
-            </Link>{" "}
-            or sign a dry-run intent from a market page.
+              market page
+            </Link>
+            . Orders you place appear here with their status and history, and every fill is checked against the order
+            you signed.
           </p>
         </div>
       )}

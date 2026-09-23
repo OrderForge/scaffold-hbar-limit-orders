@@ -142,6 +142,16 @@ The procedure, implemented in [`lib/clob/depth.ts`](../packages/nextjs/lib/clob/
 Step 6 is the one people skip. A book with a missed update looks fine and is wrong, which
 is worse than a book that is visibly stale.
 
+[`lib/clob/depthStream.ts`](../packages/nextjs/lib/clob/depthStream.ts) implements this
+against the live stream, and the UI says which source it is showing — "streaming" or
+"polling" — because the difference matters to anyone reading prices. Two details worth
+copying: the gapped diff is **discarded** rather than re-applied after the new snapshot
+(re-applying it gaps again, which is an infinite loop), and the socket falls back to
+polling after a few failed reconnects rather than leaving a frozen book on screen.
+
+The stream needs a JWT, so a keyless page cannot use it. That is the API's constraint, not
+a design choice, and it is why polling exists at all here.
+
 ## A quiet book is not a broken book
 
 A thin market can hold the same best bid and ask for minutes. Mainnet HBAR/USDC advanced
