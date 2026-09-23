@@ -75,6 +75,13 @@ const main = async () => {
     console.log(`  wrote ${name}.png`);
   };
 
+  /** One element rather than the viewport, for a panel worth showing on its own. */
+  const shotOf = async (locator: any, name: string) => {
+    await locator.screenshot({ path: path.join(OUT, `${name}.png`) });
+    written.push(`${name}.png`);
+    console.log(`  wrote ${name}.png`);
+  };
+
   /** Wait for content rather than a fixed delay, so a slow feed never lands a blank frame. */
   const settle = async (predicate: string, timeout = 30_000) => {
     await page.waitForFunction(predicate, null, { timeout }).catch(() => {});
@@ -107,6 +114,18 @@ const main = async () => {
       await settle("document.body.innerText.includes('streaming')", 25_000);
     }
     await shot("wallet");
+
+    // The order ticket on its own, filled in with a valid order: the price is on the
+    // tick grid and the size is a whole lot, so the totals and the fee appear. The
+    // numbers are the market's real ones rather than round invented figures.
+    const ticket = page.locator("div.rounded-box").filter({ hasText: "Place an order" }).first();
+    if (await ticket.count()) {
+      await ticket.getByRole("button", { name: "BUY", exact: true }).click();
+      await ticket.locator("input.input-sm").nth(0).fill("0.0425");
+      await ticket.locator("input.input-sm").nth(1).fill("10");
+      await page.waitForTimeout(800);
+      await shotOf(ticket, "order");
+    }
 
     // Opt-in, because it writes a real message to the HCS topic and costs the operator
     // account a fraction of a cent. Without it the journal frame shows the empty state,

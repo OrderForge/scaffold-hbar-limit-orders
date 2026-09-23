@@ -23,14 +23,15 @@ npm create scaffold-hbar@latest --template OrderForge/scaffold-hbar-limit-orders
 
 1. [Run it in 60 seconds](#run-it-in-60-seconds) — no keys, no wallet
 2. [What you get](#what-you-get) — and what you still trust the venue for
-3. [See it working](#see-it-working) — the wallet half, in pictures
-4. [How it works](#how-it-works) — architecture, the order path, where each piece lives
-5. [Set up the on-chain half](#set-up-the-on-chain-half) — keys, journal topic, test tokens
-6. [Configuration](#configuration) — [modes](#modes), networks, environment
-7. [Reference](#reference) — commands, layout, wallet setup, units
-8. [Documentation](#documentation) — the four guides, and which to read first
-9. [What this does not do](#what-this-does-not-do)
-10. [Troubleshooting](#troubleshooting)
+3. [What you could build with it](#what-you-could-build-with-it) — six starting points
+4. [See it working](#see-it-working) — the wallet half, in pictures
+5. [How it works](#how-it-works) — architecture, the order path, where each piece lives
+6. [Set up the on-chain half](#set-up-the-on-chain-half) — keys, journal topic, test tokens
+7. [Configuration](#configuration) — [modes](#modes), networks, environment
+8. [Reference](#reference) — commands, layout, wallet setup, units
+9. [Documentation](#documentation) — the four guides, and which to read first
+10. [What this does not do](#what-this-does-not-do)
+11. [Troubleshooting](#troubleshooting)
 
 ## Run it in 60 seconds
 
@@ -82,6 +83,24 @@ order in which orders match and whether your order is accepted at all. What the 
 that no fill can break the terms you signed, and that you can cancel on-chain without asking anyone. This
 template verifies the second part and is explicit about the first.
 
+## What you could build with it
+
+A limit order is a primitive, not a product. The parts worth reusing are the typed client,
+the money handling, the six onboarding steps and the verification — each of these starts
+from something already here rather than from the API documentation.
+
+| Idea | What you start from |
+| --- | --- |
+| **A limit-order button in an app that already swaps.** Offer "set a price instead" next to a market swap, so a user who does not like the current rate leaves an order behind instead of leaving. | `components/clob/OrderEntry.tsx` and `lib/clob/orders.ts` — the whole build → journal → sign → submit path |
+| **Laddering or DCA.** Split one large order into a grid of smaller ones across a price range, or buy a fixed amount on a schedule. | The same placement path in a loop; `validateOrder` already enforces the tick, lot and minimum-notional rules each rung has to satisfy |
+| **A post-only market maker.** Quote both sides, never cross, and earn the maker fee rather than pay the taker one. | `makerOnly` is a per-order flag, and `lib/clob/format.ts` converts the fee pips honestly; `lib/clob/depthStream.ts` gives a book that is current and knows when it is not |
+| **Treasury or DAO exits.** Sell a position at a target price over time, without handing custody to anyone — the allowance the checklist sets is capped and expires. | `lib/hedera/onboarding.ts` for the allowances, `lib/verify/fills.ts` for the record of what actually settled |
+| **An agent that trades for you.** An automated signer can commit to an order and leave a consensus-timestamped record of exactly what it committed to, which is a different thing from its own logs. | `lib/journal/` writes the intent before submission; the digest in each record links it to the settlement that follows |
+| **Alerting and receipts.** Watch a book for a price or a depth change, or produce a record of intent against settlement for accounting. | `lib/clob/depthStream.ts` for the book, `lib/mirror/` for the chain, `lib/verify/fills.ts` for the comparison |
+
+None of these needs a contract deployed. The venue's contracts are already on Hedera; this
+template is the client that talks to them correctly.
+
 ## See it working
 
 Connect a wallet and the app follows **its** network, because an approval signed on one chain says
@@ -93,6 +112,18 @@ contracts — rather than from the venue's view of your account.
 <p align="center"><em>Signed in: depth switches from polling to the WebSocket, and the six on-chain
 onboarding steps are checked against the chain. This market is halted, which the page says plainly
 rather than hiding.</em></p>
+
+The order ticket validates before it asks your wallet for anything: an off-tick price, a size
+that is not a whole lot, or an order below the minimum notional is named and refused here
+rather than rejected by the venue after you have signed it.
+
+<p align="center">
+  <img src="docs/images/order.png" width="420" alt="The order ticket: buy and sell, price and size, post-only and AMM settlement, with the total and the fee" />
+</p>
+
+<p align="center"><em>Buy or sell, post-only to guarantee the maker fee, and AMM settlement opt-in
+per order. The total and the fee are shown before signing — including on a halted market, where the
+order cannot be placed but the arithmetic still answers "what would this cost?".</em></p>
 
 Signing in exchanges a wallet signature for a short-lived API token, which never leaves memory.
 

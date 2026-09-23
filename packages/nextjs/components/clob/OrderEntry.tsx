@@ -51,20 +51,22 @@ export const OrderEntry = ({ market }: { market: Orderbook }) => {
   const ready = onboarding?.complete ?? false;
   const filled = price !== "" && size !== "";
 
+  const rules = {
+    tickStep: market.tickStep,
+    sizeStep: market.sizeStep,
+    lotSize: market.lotSize,
+    minNotional: market.minNotional,
+    baseTokenDecimals: market.baseTokenDecimals,
+    quoteTokenDecimals: market.quoteTokenDecimals,
+  };
+
+  // Two checks, because they answer different questions. The shape check asks whether
+  // this is a well-formed order, which is what the totals below are arithmetic on; the
+  // full check adds whether the venue would accept it right now. A halted market should
+  // still tell you what the order would cost.
+  const shapeValidation = filled ? validateOrder({ price, size }, rules) : null;
   const validation = filled
-    ? validateOrder(
-        { price, size },
-        {
-          tickStep: market.tickStep,
-          sizeStep: market.sizeStep,
-          lotSize: market.lotSize,
-          minNotional: market.minNotional,
-          baseTokenDecimals: market.baseTokenDecimals,
-          quoteTokenDecimals: market.quoteTokenDecimals,
-          status: market.status,
-          isMarketHalted: market.isMarketHalted,
-        },
-      )
+    ? validateOrder({ price, size }, { ...rules, status: market.status, isMarketHalted: market.isMarketHalted })
     : null;
 
   // The balance check uses the token this side actually spends, not the base token.
@@ -173,7 +175,7 @@ export const OrderEntry = ({ market }: { market: Orderbook }) => {
             </div>
           </div>
 
-          {filled && validation?.ok && (
+          {filled && shapeValidation?.ok && (
             <dl className="mt-3 space-y-1 border-t border-base-300 pt-3 text-xs">
               <div className="flex justify-between">
                 <dt className="opacity-60">Total</dt>
@@ -202,7 +204,9 @@ export const OrderEntry = ({ market }: { market: Orderbook }) => {
           {balanceError && <p className="mt-2 text-xs text-warning">{balanceError}</p>}
 
           {!ready && <p className="mt-3 text-xs opacity-60">Finish the ready-to-trade checklist above first.</p>}
-          {!tradeable && (
+          {/* Only when the warning above has not already said it, which it does as soon
+              as a price and size are entered. */}
+          {!tradeable && !(validation && !validation.ok && validation.rule === "market") && (
             <p className="mt-3 text-xs opacity-60">
               This market is {marketState(market).toLowerCase()}, so the venue will reject new orders.
             </p>
