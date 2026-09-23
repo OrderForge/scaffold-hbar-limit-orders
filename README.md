@@ -78,45 +78,82 @@ template verifies the second part and is explicit about the first.
 
 ```mermaid
 flowchart LR
-    subgraph browser["Your browser"]
-        UI["Markets · Ladder · Order entry<br/>Journal · Fill checks"]
-        W["Wallet<br/>EIP-712 signature"]
+    subgraph browser["Browser"]
+        direction TB
+        UI["Terminal<br/><small>markets · ladder · orders</small>"]
+        WALLET["Wallet<br/><small>EIP-712 signing</small>"]
     end
 
-    subgraph app["This app's server"]
-        PX["/api/clob proxy<br/>(the API sends no CORS headers)"]
-        JR["/api/journal<br/>(the only Hedera key)"]
+    subgraph server["This app's server"]
+        direction TB
+        PROXY["/api/clob<br/><small>proxy, no credentials</small>"]
+        JOURNAL["/api/journal<br/><small>holds the operator key</small>"]
     end
 
-    subgraph saucer["SaucerSwap"]
-        API["V3 Orderbook API<br/>books · depth · trades · orders"]
-        M["Matching engine<br/>off-chain, not observable"]
+    subgraph venue["SaucerSwap"]
+        direction TB
+        API["V3 Orderbook API"]
+        MATCH["Matching engine<br/><small>off-chain</small>"]
     end
 
     subgraph hedera["Hedera"]
-        R["Reactor + Permit2<br/>settlement, fee caps, cancels"]
-        T["HCS topic<br/>signed intents"]
-        MN["Mirror node<br/>balances · allowances · fill logs"]
+        direction TB
+        REACTOR["Reactor + Permit2<br/><small>settlement</small>"]
+        TOPIC["HCS topic<br/><small>signed intents</small>"]
+        MIRROR["Mirror node<br/><small>balances · fill logs</small>"]
     end
 
-    UI -->|read| PX --> API
-    UI -->|"1 - journal the intent"| JR --> T
-    W -->|"2 - sign the order"| UI
-    UI -->|"3 - submit"| PX
-    API --> M --> R
-    R -->|fill events| MN
-    MN -->|"4 - verify against the signed order"| UI
-    T -->|read back| UI
-    W -->|onboarding + on-chain cancel| R
+    UI <-->|"market data, orders"| PROXY
+    PROXY <--> API
+    UI <-->|"intents"| JOURNAL
+    JOURNAL <--> TOPIC
+    API --> MATCH
+    MATCH -->|"settles"| REACTOR
+    WALLET -->|"onboarding, on-chain cancel"| REACTOR
+    REACTOR -.->|"fill events"| MIRROR
+    MIRROR -.->|"verify"| UI
 
-    classDef trust fill:#fff3cd,stroke:#d39e00
-    class M trust
+    classDef untrusted fill:#fff3cd,stroke:#b8860b,stroke-width:2px
+    classDef ours fill:#e8e5ff,stroke:#6b5ce7
+    class MATCH untrusted
+    class UI,WALLET,PROXY,JOURNAL ours
 ```
 
-The highlighted box is the part nobody can verify: matching happens off-chain, and only
-SaucerSwap's filler can settle an order. Everything else is either in your browser, on your
-own server, or on Hedera where anyone can check it. See
-[docs/hedera.md](docs/hedera.md#the-trust-boundary).
+The highlighted box is the one part nobody can verify: matching happens off-chain, and only
+SaucerSwap's filler can settle an order. Everything else is in your browser, on your own
+server, or on Hedera where anyone can check it.
+
+### Placing an order, end to end
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor You
+    participant App as Terminal
+    participant API as SaucerSwap API
+    participant HCS as HCS topic
+    participant R as Reactor (Hedera)
+    participant M as Mirror node
+
+    You->>App: price and size
+    App->>App: validate
+    Note over App,API: tick, lot, minimum notional and balance are<br/>checked first, so an invalid order never<br/>reaches your wallet
+    App->>API: POST /orders/build
+    API-->>App: order with a server-assigned nonce
+    App->>HCS: journal the intent
+    Note over HCS,R: written before submission, so the record of<br/>what you signed survives a failed send
+    You->>App: sign (EIP-712)
+    App->>API: POST /orders/save
+    API-->>App: order id
+    API->>R: settle a matched fill
+    Note over API,R: matching is off-chain: who matched,<br/>and when, is not observable
+    R-->>M: TakerFill / MakerFill
+    App->>M: read the fill
+    App->>App: verify
+    Note over App,API: price, fee cap, deadline, size and recipient,<br/>checked against the journalled intent
+```
+
+See [docs/hedera.md](docs/hedera.md#the-trust-boundary) for what each guarantee rests on.
 
 | Piece | Where |
 | --- | --- |
