@@ -50,6 +50,8 @@ export type OnboardingStep = {
 export type OnboardingState = {
   steps: OnboardingStep[];
   complete: boolean;
+  /** False when the account has no record on the mirror node — see `AssociationInfo`. */
+  accountExists: boolean;
   /** The next step to act on, or null when nothing is left. */
   next: OnboardingStep | null;
 };
@@ -120,6 +122,14 @@ export type AssociationInfo = {
   associatedTokenIds: Set<string>;
   /** -1 means unlimited automatic associations. */
   maxAutomaticTokenAssociations: number;
+  /**
+   * False when the mirror node has no record of this account.
+   *
+   * An address that has never received HBAR does not exist on Hedera yet — it cannot
+   * associate a token or approve anything. The checklist says so instead of showing six
+   * steps that would all fail.
+   */
+  accountExists: boolean;
 };
 
 export const readAssociation = async (
@@ -127,14 +137,21 @@ export const readAssociation = async (
   accountId: string,
   signal?: AbortSignal,
 ): Promise<AssociationInfo> => {
-  const [account, tokens] = await Promise.all([
-    mirror.getAccount(accountId, signal),
-    mirror.getTokenBalances(accountId, undefined, signal),
-  ]);
+  const account = await mirror.getAccount(accountId, signal);
+
+  // Resolve the account first: an address with no record holds no tokens, and asking for
+  // them answers 404. Reporting that as "not on the network yet" is more useful than
+  // either an error or a checklist of six steps that cannot be done.
+  if (!account) {
+    return { associatedTokenIds: new Set(), maxAutomaticTokenAssociations: 0, accountExists: false };
+  }
+
+  const tokens = await mirror.getTokenBalances(account.accountId, undefined, signal);
 
   return {
     associatedTokenIds: new Set(tokens.map(token => token.tokenId)),
-    maxAutomaticTokenAssociations: account?.maxAutomaticTokenAssociations ?? 0,
+    maxAutomaticTokenAssociations: account.maxAutomaticTokenAssociations,
+    accountExists: true,
   };
 };
 
@@ -195,13 +212,22 @@ export const deriveOnboarding = async (
     });
   }
 
-  const [baseToPermit2, quoteToPermit2] = await Promise.all(
-    sides.map(token => chain.readErc20Allowance(token.evm, owner, config.permit2)),
-  );
+  // An account with no record on the network cannot be asked about: an HTS `allowance`
+  // call for an owner that does not exist reverts with INVALID_ACCOUNT_ID, which is a
+  // confusing way to say "you have not funded this address". Skip the reads and report
+  // the real state instead.
+  const [baseToPermit2, quoteToPermit2] = association.accountExists
+    ? await Promise.all(sides.map(token => chain.readErc20Allowance(token.evm, owner, config.permit2)))
+    : [0n, 0n];
 
-  const [baseToReactor, quoteToReactor] = await Promise.all(
-    sides.map(token => chain.readPermit2Allowance(config.permit2, owner, token.evm, config.reactor)),
-  );
+  const [baseToReactor, quoteToReactor] = association.accountExists
+    ? await Promise.all(
+        sides.map(token => chain.readPermit2Allowance(config.permit2, owner, token.evm, config.reactor)),
+      )
+    : [
+        { amount: 0n, expiration: 0 },
+        { amount: 0n, expiration: 0 },
+      ];
 
   sides.forEach((token, index) => {
     const allowance = index === 0 ? baseToPermit2 : quoteToPermit2;
@@ -251,7 +277,9 @@ export const deriveOnboarding = async (
 
   return {
     steps,
-    complete: steps.every(step => step.done),
+    // An account that does not exist yet cannot be ready, whatever the reads say.
+    complete: association.accountExists && steps.every(step => step.done),
+    accountExists: association.accountExists,
     next: steps.find(step => !step.done) ?? null,
   };
 };

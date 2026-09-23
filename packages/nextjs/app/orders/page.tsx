@@ -151,7 +151,7 @@ const OrdersPage = () => {
       )}
 
       {error && <div className="alert alert-error mt-6">{(error as Error).message}</div>}
-      {isSignedIn && isLoading && <p className="mt-12 text-center opacity-60">Loading orders…</p>}
+      {isSignedIn && isLoading && !error && <p className="mt-12 text-center opacity-60">Loading orders…</p>}
 
       {isSignedIn && orders && orders.length === 0 && (
         <div className="mt-12 rounded-box bg-base-200 p-8 text-center text-sm opacity-70">

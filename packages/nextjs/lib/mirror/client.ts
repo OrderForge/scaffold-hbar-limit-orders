@@ -6,6 +6,7 @@
  * the Orderbook API's own view of the world.
  */
 import { ClobNetwork, ClobNetworkConfig, getNetworkConfig } from "../clob/config";
+import { ClobError } from "../clob/errors";
 import { request, withQuery } from "../clob/http";
 
 export type TokenBalance = {
@@ -63,13 +64,23 @@ export class MirrorClient {
     }
   }
 
-  /** Token balances for an account, optionally filtered to specific token ids. */
+  /**
+   * Token balances for an account, optionally filtered to specific token ids.
+   *
+   * An account the mirror node has never seen answers 404 here. That is a state, not a
+   * failure — it holds no tokens because it does not exist yet — so it returns an empty
+   * list, matching how `getAccount` treats the same 404. Every other error still throws:
+   * a rate limit or an outage must not be mistaken for "this account holds nothing".
+   */
   async getTokenBalances(accountId: string, tokenIds?: string[], signal?: AbortSignal): Promise<TokenBalance[]> {
     const url = withQuery(this.url(`/accounts/${accountId}/tokens`), {
       limit: 100,
       "token.id": tokenIds?.length === 1 ? tokenIds[0] : undefined,
     });
-    const payload = await request<any>(url, { cacheMs: CACHE_MS.tokens, signal });
+    const payload = await request<any>(url, { cacheMs: CACHE_MS.tokens, signal }).catch((cause: unknown) => {
+      if (cause instanceof ClobError && cause.status === 404) return { tokens: [] };
+      throw cause;
+    });
     const tokens: TokenBalance[] = (payload.tokens ?? []).map((token: any) => ({
       tokenId: token.token_id,
       balance: String(token.balance ?? "0"),

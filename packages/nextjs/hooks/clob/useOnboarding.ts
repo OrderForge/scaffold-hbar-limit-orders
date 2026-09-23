@@ -26,8 +26,10 @@ export const useOnboarding = (market: Orderbook | null | undefined) => {
       const association = await readAssociation(mirror, address, signal);
       return deriveOnboarding(market, address as `0x${string}`, config, association, viemChainReader(publicClient));
     },
-    // Cheap enough to re-check often, and it must reflect a transaction promptly.
-    refetchInterval: 15_000,
+    // Cheap enough to re-check often, and it must reflect a transaction promptly — but a
+    // check that is failing should back off rather than retry every 15 seconds forever.
+    refetchInterval: query => (query.state.status === "error" ? 60_000 : 15_000),
+    retry: 1,
     staleTime: 5_000,
   });
 };

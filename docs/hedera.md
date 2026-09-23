@@ -146,6 +146,23 @@ Hedera accounts have no EVM alias and cannot sign orders this way.
 For API login both work, but they need different signing schemes — see
 [integration.md](./integration.md#authentication).
 
+## An address is not yet an account
+
+On Hedera an address comes into existence when it first receives HBAR. Before that, the
+mirror node has no record of it and the network will not let it do anything — and both
+facts are reported in ways that read like bugs:
+
+- `GET /accounts/{address}` answers **404**, and so does `/accounts/{address}/tokens`.
+- An HTS token's ERC-20 `allowance(owner, spender)` **reverts** for such an owner, with
+  the raw bytes `0x494e5641…` — ASCII `INVA`, the start of `INVALID_ACCOUNT_ID`. viem
+  cannot decode it, so it surfaces as "reverted with signature 0x494e5641".
+
+This is the first thing a new user of this template hits, because the burner wallet
+creates exactly such an address. The onboarding check therefore resolves the account
+first, and when there is no record it says so rather than running six reads that all
+fail. Any other mirror-node error is still shown as an error: an outage must not be
+mistaken for an empty account.
+
 ## Why this belongs on Hedera
 
 Not because an order book needs a ledger — it does not, and SaucerSwap's runs off-chain.

@@ -159,8 +159,13 @@ const StepRow = ({
  * verified source, which settles through Permit2.
  */
 export const OnboardingChecklist = ({ market }: { market: Orderbook }) => {
-  const { data: onboarding, refetch, isLoading } = useOnboarding(market);
+  const { data: onboarding, refetch, isLoading, error } = useOnboarding(market);
+  const { network } = useClobNetwork();
   const [approvalAmount, setApprovalAmount] = useState("1000");
+
+  // Only on the very first read. `isLoading` is also true on every retry of a failing
+  // query, and flashing this message every few seconds looks like a broken page.
+  const firstLoad = isLoading && !onboarding && !error;
 
   return (
     <div className="rounded-box bg-base-100 p-4">
@@ -172,9 +177,29 @@ export const OnboardingChecklist = ({ market }: { market: Orderbook }) => {
       <div className="mt-3">
         <WalletGate action="see what this account still needs">
           <>
-            {isLoading && <p className="text-sm opacity-60">Checking the chain…</p>}
+            {firstLoad && <p className="text-sm opacity-60">Checking the chain…</p>}
 
-            {onboarding && !onboarding.complete && (
+            {error && !onboarding && (
+              <div className="mt-2 text-sm">
+                <p className="text-error">Could not read this account&apos;s state from the chain.</p>
+                <p className="mt-1 text-xs opacity-70">{(error as Error).message}</p>
+                <button type="button" className="btn btn-ghost btn-xs mt-2" onClick={() => refetch()}>
+                  try again
+                </button>
+              </div>
+            )}
+
+            {onboarding && !onboarding.accountExists && (
+              <div className="mt-2 text-sm">
+                <p>This address has no account on {network} yet.</p>
+                <p className="mt-1 text-xs opacity-70">
+                  On Hedera an address comes into existence when it first receives HBAR, and until then it cannot
+                  associate a token or approve a spender. Send it some HBAR and these steps will appear.
+                </p>
+              </div>
+            )}
+
+            {onboarding?.accountExists && !onboarding.complete && (
               <div className="mt-3 flex items-start gap-2 rounded-box bg-base-200 p-3 text-xs">
                 <ExclamationTriangleIcon className="mt-0.5 h-4 w-4 shrink-0 opacity-70" />
                 <p>
@@ -185,7 +210,7 @@ export const OnboardingChecklist = ({ market }: { market: Orderbook }) => {
               </div>
             )}
 
-            {onboarding && (
+            {onboarding?.accountExists && (
               <ul className="mt-2">
                 {onboarding.steps.map(step => (
                   <StepRow
@@ -199,7 +224,7 @@ export const OnboardingChecklist = ({ market }: { market: Orderbook }) => {
               </ul>
             )}
 
-            {onboarding && !onboarding.complete && (
+            {onboarding?.accountExists && !onboarding.complete && (
               <label className="mt-3 flex items-center gap-2 text-xs">
                 <span className="opacity-70">Approve up to</span>
                 <input

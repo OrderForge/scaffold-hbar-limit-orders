@@ -25,7 +25,48 @@ const fullChain = (expiration: number): ChainReader => ({
 const association = (over: Partial<AssociationInfo> = {}): AssociationInfo => ({
   associatedTokenIds: new Set<string>(),
   maxAutomaticTokenAssociations: 0,
+  accountExists: true,
   ...over,
+});
+
+describe("an account that is not on the network yet", () => {
+  // An address that has never received HBAR has no record on the mirror node. Asking for
+  // its token balances answers 404, which used to fail the whole read: the checklist then
+  // showed nothing at all and retried forever. It is a state, and it is reported as one.
+  it("is never complete, and is never asked about on chain", async () => {
+    // An HTS `allowance` call for an owner that does not exist reverts with
+    // INVALID_ACCOUNT_ID, so these reads must not happen at all.
+    const reverting: ChainReader = {
+      readErc20Allowance: async () => {
+        throw new Error("reverted: INVALID_ACCOUNT_ID");
+      },
+      readPermit2Allowance: async () => {
+        throw new Error("reverted: INVALID_ACCOUNT_ID");
+      },
+    };
+
+    const state = await deriveOnboarding(market, OWNER, config, association({ accountExists: false }), reverting, NOW);
+
+    expect(state.accountExists).toBe(false);
+    expect(state.complete).toBe(false);
+    expect(state.steps.every(step => !step.done)).toBe(true);
+  });
+
+  it("is distinguishable from an account that exists and has done nothing", async () => {
+    const missing = await deriveOnboarding(
+      market,
+      OWNER,
+      config,
+      association({ accountExists: false }),
+      emptyChain,
+      NOW,
+    );
+    const fresh = await deriveOnboarding(market, OWNER, config, association(), emptyChain, NOW);
+
+    expect(missing.accountExists).toBe(false);
+    expect(fresh.accountExists).toBe(true);
+    expect(fresh.complete).toBe(false);
+  });
 });
 
 describe("deriveOnboarding", () => {

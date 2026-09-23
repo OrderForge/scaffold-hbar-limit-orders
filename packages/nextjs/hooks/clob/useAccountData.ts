@@ -47,7 +47,13 @@ export const useVenueOnboarding = (orderbookId: string | undefined) => {
   });
 };
 
-/** The authenticated account's orders. Polled; the WebSocket arrives in the next increment. */
+/**
+ * The authenticated account's orders.
+ *
+ * Polled every 10 seconds. SaucerSwap also streams order events over `/ws/orders`, which
+ * this template does not use: unlike depth, an order list has no reconciliation problem
+ * worth demonstrating, and polling keeps the signed-in path simpler to read.
+ */
 export const useOrders = () => {
   const { client, network } = useClobNetwork();
   const { address } = useAccount();
