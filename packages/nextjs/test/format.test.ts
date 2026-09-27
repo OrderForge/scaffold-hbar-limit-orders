@@ -201,6 +201,18 @@ describe("validateOrder", () => {
     expect(validateOrder({ price: "1", size: "7" }, shapeOnly)).toMatchObject({ ok: false });
   });
 
+  it("suggests a size the market will take, never zero", () => {
+    // Truncating 7 against a 10-lot gives 0, and "nearest allowed: 0" is not advice.
+    // One lot is the smallest thing that can actually be traded.
+    const result = validateOrder({ price: "0.0425", size: "7" }, rules);
+    expect(result).toMatchObject({ ok: false, rule: "lot" });
+    expect(!result.ok && result.message).toContain("Nearest allowed: 10.");
+
+    // Above one lot it still truncates, because rounding a size up spends more than asked.
+    const larger = validateOrder({ price: "0.0425", size: "27" }, rules);
+    expect(!larger.ok && larger.message).toContain("Nearest allowed: 20.");
+  });
+
   it("blocks a closed market", () => {
     expect(validateOrder({ price: "1", size: "10" }, { ...rules, status: "CLOSED" })).toMatchObject({
       ok: false,

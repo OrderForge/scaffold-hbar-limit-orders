@@ -88,6 +88,9 @@ export const OrderEntry = ({ market }: { market: Orderbook }) => {
     }
   }
 
+  const warning =
+    shapeValidation && !shapeValidation.ok ? shapeValidation.message : validation?.ok ? null : validation?.message;
+
   const blocked = !tradeable || !ready || !filled || !validation?.ok || Boolean(balanceError);
   const busy = ["building", "signing", "journalling", "saving"].includes(stage);
 
@@ -199,8 +202,13 @@ export const OrderEntry = ({ market }: { market: Orderbook }) => {
             </dl>
           )}
 
-          {/* Validation runs before any signature is requested, and names the rule that failed. */}
-          {validation && !validation.ok && <p className="mt-2 text-xs text-warning">{validation.message}</p>}
+          {/*
+            Validation runs before any signature is requested, and names the rule that
+            failed. The order's own shape comes first: "this market is halted" is true but
+            not actionable, and it would otherwise hide the tick or lot rule the trader
+            can actually do something about.
+          */}
+          {warning && <p className="mt-2 text-xs text-warning">{warning}</p>}
           {balanceError && <p className="mt-2 text-xs text-warning">{balanceError}</p>}
 
           {!ready && <p className="mt-3 text-xs opacity-60">Finish the ready-to-trade checklist above first.</p>}

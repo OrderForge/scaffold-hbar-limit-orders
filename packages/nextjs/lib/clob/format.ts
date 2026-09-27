@@ -127,6 +127,21 @@ export const roundToLot = (size: string, lotSize: string, decimals: number): str
   return formatUnits(snapped, decimals);
 };
 
+/**
+ * The nearest size this market will actually accept, for a suggestion in an error.
+ *
+ * `roundToLot` truncates, which is the right rule everywhere that money is at stake —
+ * rounding a size up spends more than the trader asked for. But a size below one lot
+ * truncates to zero, and "nearest allowed: 0" is not advice. The smallest tradeable size
+ * is one lot, so say that instead.
+ */
+export const suggestedLotSize = (size: string, lotSize: string, decimals: number): string => {
+  const lot = BigInt(lotSize.split(".")[0] || "0");
+  if (lot <= 0n) return size;
+  const snapped = parseDecimal(roundToLot(size, lotSize, decimals), decimals);
+  return formatUnits(snapped > 0n ? snapped : lot, decimals);
+};
+
 /** Notional = price × size, exact, returned in quote-token units. */
 export const notionalUnits = (price: string, size: string, baseDecimals: number, quoteDecimals: number): bigint => {
   const priceUnits = parsePrice(price);
@@ -226,7 +241,7 @@ export const validateOrder = (order: { price: string; size: string }, market: Ma
     return {
       ok: false,
       rule: "lot",
-      message: `Size must be a whole number of lots (${formatUnits(lot, baseTokenDecimals)}). Nearest allowed: ${roundToLot(
+      message: `Size must be a whole number of lots (${formatUnits(lot, baseTokenDecimals)}). Nearest allowed: ${suggestedLotSize(
         order.size,
         market.lotSize,
         baseTokenDecimals,
