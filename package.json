@@ -38,6 +38,7 @@
     "lint": "yarn next:lint && yarn hardhat:lint && yarn lint:wording",
     "lint-staged": "lint-staged",
     "lint:wording": "node scripts/lint-wording.mjs",
+    "smoke": "node scripts/smoke.mjs",
     "next:build": "yarn workspace @sh/nextjs build",
     "next:check-types": "yarn workspace @sh/nextjs check-types",
     "next:dev": "yarn workspace @sh/nextjs dev",
@@ -51,9 +52,11 @@
   },
   "packageManager": "yarn@3.2.3",
   "devDependencies": {
+    "hedera-harness": "^1.2.2",
     "husky": "^9.1.6",
     "lint-staged": "^15.2.10",
-    "playwright": "^1.63.0"
+    "playwright": "^1.63.0",
+    "yaml": "^2"
   },
   "engines": {
     "node": ">=20.18.3"

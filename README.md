@@ -327,6 +327,8 @@ yarn clob:fund --hbar 20        # swap HBAR into a market's tokens
 yarn clob:doctor                # check the live API still matches what this was built against
 yarn clob:demo                  # record a walkthrough of the running app
 yarn clob:shots                 # re-capture the README screenshots
+yarn smoke                      # browser smoke test against a running build
+yarn hedera-harness validate    # the full harness: commands, static checks, browser
 yarn lint:wording               # fail the build if the docs claim more than the design backs
 ```
 
@@ -392,7 +394,7 @@ packages/nextjs/
   lib/hedera/    the six onboarding steps, derived from chain reads
   lib/journal/   HCS order-intent records
   lib/verify/    fill verification against the signed order
-  test/          149 unit tests, offline against fixtures captured from the live API
+  test/          150 unit tests, offline against fixtures captured from the live API
 docs/            microstructure, integration, hedera, discrepancies
 .harness/        harness spec, increment PRDs, validators
 ```
@@ -404,17 +406,28 @@ docs/            microstructure, integration, hedera, discrepancies
 
 The [Hedera Harness](https://www.npmjs.com/package/hedera-harness) recipe lives in `.harness/`: the spec,
 five increment PRDs, the static and command validators, a browser smoke test, and an acceptance contract.
+The harness is a dev dependency, so `yarn install` brings it in.
 
 ```bash
-npx playwright install chromium   # the Tier 2 gate needs a browser
-npx hedera-harness validate
+yarn hedera-harness validate      # all three tiers
 ```
 
-All seven commands pass (install, wording, lint, compile, both test suites, build), the static validator
-and secret scan are clean on a fresh clone, and the browser smoke test passes 6/6 routes with no console
-errors. The smoke test deliberately asserts on structure rather than market data: an earlier version
-looked for bid and ask rows, which would have failed the moment testnet halted — testing the venue rather
-than the template.
+On a fresh clone all seven commands pass (install, wording, lint, compile, both test suites, build), the
+static validator and secret scan are clean, and the browser gate passes 6/6 routes with no console errors.
+It serves the production build the command tier has just made, rather than a dev server that would spend
+its first minute compiling. Playwright uses its own browser where it can install one and system Chrome
+where it cannot — macOS 13, for one.
+
+The harness gate checks that each route loads, renders and logs no errors; it does not read the text each
+route promises. `yarn smoke` checks that too, against a running build:
+
+```bash
+yarn next:build && yarn workspace @sh/nextjs serve   # one terminal
+yarn smoke                                           # another
+```
+
+Both assert on structure rather than market data. An earlier version looked for bid and ask rows, which
+would have failed the moment testnet halted — testing the venue rather than the template.
 
 </details>
 
