@@ -13,6 +13,8 @@ export const GAS_LIMITS = {
   APPROVE_PERMIT2: 1_000_000n,
   PERMIT2_APPROVE_REACTOR: 1_000_000n,
   CANCEL_ORDER_ONCHAIN: 1_000_000n,
+  /** HIP-906 `hbarApprove` on the account's own address; estimated at ~783k on testnet. */
+  HBAR_APPROVE: 1_000_000n,
 } as const;
 
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";

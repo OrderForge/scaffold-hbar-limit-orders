@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { WalletGate } from "./WalletGate";
-import { useWriteContract } from "wagmi";
+import { useAccount, useWriteContract } from "wagmi";
 import { CheckCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
 import { useOnboarding } from "~~/hooks/clob/useOnboarding";
 import { parseDecimal } from "~~/lib/clob/format";
 import { Orderbook } from "~~/lib/clob/types";
+import { hbarApproveCall } from "~~/lib/hedera/hbar";
 import { OnboardingStep, stepExplanation, stepLabel } from "~~/lib/hedera/onboarding";
 import { hashscan } from "~~/lib/mirror/client";
 import { GAS_LIMITS } from "~~/utils/hedera/constants";
@@ -60,6 +61,7 @@ const StepRow = ({
   onDone: () => void;
 }) => {
   const { config } = useClobNetwork();
+  const { address } = useAccount();
   const links = hashscan(config);
   const { writeContractAsync, isPending } = useWriteContract();
   const [hash, setHash] = useState<string | null>(null);
@@ -79,6 +81,15 @@ const StepRow = ({
           functionName: "associate",
           chainId: config.chainId,
           gas: GAS_LIMITS.ASSOCIATE,
+        });
+      } else if (step.kind === "approvePermit2" && step.native) {
+        // Native HBAR has no ERC-20 approve. HIP-906 routes a call to the account's own
+        // address to the Account Service, which records a real HBAR allowance.
+        if (!address) throw new Error("Connect a wallet first.");
+        txHash = await writeContractAsync({
+          ...hbarApproveCall(address as `0x${string}`, config.permit2, parseDecimal(approvalAmount, decimals)),
+          chainId: config.chainId,
+          gas: GAS_LIMITS.HBAR_APPROVE,
         });
       } else if (step.kind === "approvePermit2") {
         txHash = await writeContractAsync({
@@ -126,7 +137,7 @@ const StepRow = ({
           </div>
         </div>
 
-        {!step.done && !(step.native && step.kind === "approvePermit2") && (
+        {!step.done && (
           <button type="button" className="btn btn-primary btn-xs" onClick={run} disabled={isPending}>
             {isPending ? "confirm in wallet…" : "Do it"}
           </button>
@@ -134,10 +145,9 @@ const StepRow = ({
       </div>
 
       {!step.done && step.native && step.kind === "approvePermit2" && (
-        <p className="ml-7 text-xs opacity-70">
-          Grant an HBAR allowance to Permit2 (<span className="font-mono">{config.permit2Id}</span>) from a wallet that
-          supports HBAR allowances, such as HashPack. This template does not send that transaction yet, so this step
-          updates once the mirror node sees it.
+        <p className="ml-7 text-xs opacity-60">
+          Your wallet sends this to your own address. Hedera routes it to the Account Service (HIP-906), which records
+          an HBAR allowance for Permit2 (<span className="font-mono">{config.permit2Id}</span>).
         </p>
       )}
 

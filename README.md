@@ -427,7 +427,7 @@ packages/nextjs/
   lib/hedera/    the six onboarding steps, derived from chain reads
   lib/journal/   HCS order-intent records
   lib/verify/    fill verification against the signed order
-  test/          178 unit tests, offline against fixtures captured from the live API
+  test/          183 unit tests, offline against fixtures captured from the live API
 docs/            microstructure, integration, hedera, discrepancies
 .harness/        harness spec, increment PRDs, validators
 ```
@@ -489,10 +489,6 @@ would have failed the moment testnet halted — testing the venue rather than th
   against your signed order and is explicit that ordering, acceptance and latency are not observable.
 - **Cancellation is not instant.** A `202` is an acknowledgement; the UI says "cancel requested" until the
   order's history confirms it, because an order that is still live can still fill.
-- **It does not send the HBAR allowance for native-HBAR markets yet.** On markets that trade native HBAR,
-  such as mainnet HBAR/USDC, Permit2 spends an HBAR allowance rather than an ERC-20 approval. The checklist
-  reads it correctly and says how to grant it, but has no button for it. See
-  [DISCREPANCIES.md](docs/DISCREPANCIES.md).
 - **Keyless market data is a rollout, not a guarantee.** If a network has not had it yet, public reads
   answer `401` and the app says so instead of showing a login prompt nobody can satisfy.
 

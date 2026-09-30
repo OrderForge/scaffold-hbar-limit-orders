@@ -173,14 +173,17 @@ token is an ERC-20:
 | Step | For a token | For native HBAR |
 | --- | --- | --- |
 | Associate | an HTS transaction | not needed: every account holds HBAR |
-| Allow Permit2 | ERC-20 `approve` | an **HBAR allowance** (`CryptoApproveAllowance`) |
+| Allow Permit2 | ERC-20 `approve` | an **HBAR allowance** — from a wallet, HIP-906's `hbarApprove` sent to your own address |
 | Permit2 → reactor | `Permit2.approve(token, …)` | the same call, with token `0x000…000` |
 | Balance | the account's token list | the account's own balance |
 
 The reactor's HTS library spends that allowance through `cryptoTransfer`; its own comment
 says the allowance is granted "via Hedera SDK's CryptoApproveAllowance transaction".
-Reading it is easy — the mirror node lists HBAR allowances per spender, by `0.0.x` id —
-and `lib/hedera/hbar.ts` is where the template decides which path a token takes.
+Reading it is easy — the mirror node lists HBAR allowances per spender, by `0.0.x` id.
+Granting it from a wallet uses HIP-906: every account has a proxy, so a call to your own
+EVM address is routed to the Account Service, in the same way HIP-719 routes
+`associate()` sent to a token's address. `lib/hedera/hbar.ts` is where the template
+decides which path a token takes.
 
 ## Why this belongs on Hedera
 

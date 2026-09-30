@@ -128,6 +128,11 @@ The readiness check reads an allowance that cannot exist, and the balance check 
 account's token list for `0.0.0` and finds nothing. The template handles both
 (`lib/hedera/hbar.ts`): HBAR's Permit2 step is read from the mirror node's
 `/accounts/{id}/allowances/crypto`, filtered by Permit2's `0.0.x` id, and its balance is
-the account's own. It does not yet send the HBAR allowance itself; the checklist says how
-to grant it instead.
+the account's own.
+
+A wallet grants the HBAR allowance through HIP-906: `hbarApprove(spender, amount)` (selector
+`0x86aff07c`), sent to the account's **own EVM address**, which Hedera redirects to the
+Account Service system contract. It must be the EVM alias — the long-zero form of the same
+account is not redirected and returns nothing. Simulated on testnet from a funded account,
+the call returns response code 22 (SUCCESS) at about 783k gas.
 
