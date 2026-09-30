@@ -4,8 +4,12 @@ Add non-custodial limit orders from SaucerSwap's order book to any Hedera app, w
 on-chain against what you signed.
 
 ```bash
-npm create scaffold-hbar@latest --template OrderForge/scaffold-hbar-limit-orders
+npm create scaffold-hbar@latest -- --template OrderForge/scaffold-hbar-limit-orders
 ```
+
+The `--` matters: without it npm keeps `--template` for itself, and you get the default
+template instead of this one. `npx create-scaffold-hbar@latest --template OrderForge/scaffold-hbar-limit-orders`
+works too.
 
 > **Status:** complete and working — market terminal, live depth over WebSocket, onboarding, wallet
 > login, order placement and cancellation, the HCS journal, and on-chain fill verification.
