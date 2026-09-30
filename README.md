@@ -132,6 +132,17 @@ rather than rejected by the venue after you have signed it.
 per order. The total and the fee are shown before signing — on a halted market too, where the order
 cannot be placed but the arithmetic still answers "what would this cost?".</em></p>
 
+Click **Buy** or **Sell** and the ticket follows the order through its whole life, each step with its
+evidence: the venue's nonce, the signature, the journal entry on HCS, the order id, the settlement
+transaction, and the checks against what you signed.
+
+<p align="center">
+  <img src="docs/images/progress.png" width="420" alt="An order's progress in the ticket: built, signed, journalled to HCS, accepted, filled on Hedera, and checked against what was signed — all six steps done" />
+</p>
+
+<p align="center"><em>Order 3510225 on testnet, fourteen seconds from click to verified fill. A step that fails
+says why; a rejected order still shows its journal receipt, because the intent was recorded first.</em></p>
+
 Signing in exchanges a wallet signature for a short-lived API token, which never leaves memory.
 
 ![The orders page, signed in, listing orders placed, filled and cancelled on testnet](docs/images/orders.png)
