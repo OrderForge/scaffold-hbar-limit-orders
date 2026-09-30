@@ -77,6 +77,11 @@ where the SaucerSwap reactor and Permit2 go).
 8. **The chain is the record.** Onboarding state and fills are checked against the mirror node and the
    contracts, never taken from the Orderbook API's word.
 
+9. **Native HBAR is not a token.** A market token of `0.0.0` / `0x000…000` is native HBAR: nothing to
+   associate, no ERC-20 `allowance` or `approve` (both fail at the zero address), an HBAR allowance to
+   Permit2 instead, and the balance comes from the account itself. Ask `isNativeHbar` (`lib/hedera/hbar.ts`)
+   before treating any market token as an ERC-20.
+
 ## UI
 
 - **DaisyUI** classes for layout (`btn`, `card`, …); themes are defined in `packages/nextjs/styles/globals.css`

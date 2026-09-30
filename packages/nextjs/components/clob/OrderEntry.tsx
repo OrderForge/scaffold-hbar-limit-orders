@@ -12,6 +12,7 @@ import { usePlaceOrder } from "~~/hooks/clob/usePlaceOrder";
 import { formatUnits, notional, parseDecimal, pipsToPercentLabel, validateOrder } from "~~/lib/clob/format";
 import { OrderSide, spendingToken } from "~~/lib/clob/orders";
 import { Orderbook, marketState } from "~~/lib/clob/types";
+import { isNativeHbar } from "~~/lib/hedera/hbar";
 import { hashscan } from "~~/lib/mirror/client";
 
 /** Balance of the token this side spends, read from the mirror node. */
@@ -25,6 +26,9 @@ const useSpendableBalance = (market: Orderbook, side: OrderSide) => {
     enabled: Boolean(address),
     queryFn: async ({ signal }) => {
       if (!address) return null;
+      // Native HBAR is the account's own balance; asking the token list for `0.0.0` finds
+      // nothing and would report a funded account as holding none.
+      if (isNativeHbar(token.tokenId)) return (await mirror.getAccount(address, signal))?.balanceTinybars ?? "0";
       const balances = await mirror.getTokenBalances(address, [token.tokenId], signal);
       return balances[0]?.balance ?? "0";
     },

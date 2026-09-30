@@ -118,6 +118,24 @@ export class MirrorClient {
   }
 
   /**
+   * The HBAR allowance an account has granted a spender, in tinybars — what is left of it,
+   * not what was first granted.
+   *
+   * This is native HBAR's equivalent of an ERC-20 `allowance`, which HBAR does not have.
+   * The spender is named by its `0.0.x` id. An account with no record answers 404, which
+   * means no allowance; any other failure throws.
+   */
+  async getHbarAllowance(owner: string, spenderId: string, signal?: AbortSignal): Promise<bigint> {
+    const url = withQuery(this.url(`/accounts/${owner}/allowances/crypto`), { "spender.id": spenderId, limit: 1 });
+    const payload = await request<any>(url, { cacheMs: CACHE_MS.allowances, signal }).catch((cause: unknown) => {
+      if (cause instanceof ClobError && cause.status === 404) return { allowances: [] };
+      throw cause;
+    });
+    const match = (payload.allowances ?? []).find((allowance: any) => allowance.spender === spenderId);
+    return match ? BigInt(match.amount ?? 0) : 0n;
+  }
+
+  /**
    * Contract execution result with its logs — the basis for verifying a fill.
    *
    * Null means the mirror node has no result for that hash yet, which is normal for a few

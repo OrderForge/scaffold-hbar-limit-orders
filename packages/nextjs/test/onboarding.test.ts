@@ -14,11 +14,13 @@ const NOW = Date.UTC(2026, 8, 21);
 /** A chain where nothing has been approved. */
 const emptyChain: ChainReader = {
   readErc20Allowance: async () => 0n,
+  readHbarAllowance: async () => 0n,
   readPermit2Allowance: async () => ({ amount: 0n, expiration: 0 }),
 };
 
 const fullChain = (expiration: number): ChainReader => ({
   readErc20Allowance: async () => 1_000_000_000n,
+  readHbarAllowance: async () => 1_000_000_000n,
   readPermit2Allowance: async () => ({ amount: 1_000_000_000n, expiration }),
 });
 
@@ -38,6 +40,9 @@ describe("an account that is not on the network yet", () => {
     // INVALID_ACCOUNT_ID, so these reads must not happen at all.
     const reverting: ChainReader = {
       readErc20Allowance: async () => {
+        throw new Error("reverted: INVALID_ACCOUNT_ID");
+      },
+      readHbarAllowance: async () => {
         throw new Error("reverted: INVALID_ACCOUNT_ID");
       },
       readPermit2Allowance: async () => {
@@ -138,6 +143,9 @@ describe("deriveOnboarding", () => {
         erc20Calls.push([token, owner, spender]);
         return 1n;
       },
+      readHbarAllowance: async () => {
+        throw new Error("an HTS market must never ask for an HBAR allowance");
+      },
       readPermit2Allowance: async (permit2, owner, token, spender) => {
         permit2Calls.push([permit2, owner, token, spender]);
         return { amount: 1n, expiration: Math.floor(NOW / 1000) + 86400 };
@@ -185,5 +193,89 @@ describe("settlement addresses", () => {
     expect(getNetworkConfig("testnet").permit2).toBe("0x2e2C4f4277183F2BC5eb982CD4cD27C1fb01c6Ed");
     expect(getNetworkConfig("mainnet").reactor).toBe("0xa2c2713E82B47DCB3B0bae75199C81fcd185b86C");
     expect(getNetworkConfig("mainnet").permit2).toBe("0x8D53a86b10b503f284A0EA9e8316bc6081432A96");
+  });
+
+  it("knows Permit2's Hedera id, which names it as an HBAR allowance spender", () => {
+    // Resolved from the mirror node's /contracts/{evm}; clob:doctor re-checks it.
+    expect(getNetworkConfig("testnet").permit2Id).toBe("0.0.8991877");
+    expect(getNetworkConfig("mainnet").permit2Id).toBe("0.0.10527448");
+  });
+});
+
+describe("a market that trades native HBAR", () => {
+  // Mainnet HBAR/USDC reports its base as token 0.0.0 at the zero address. HBAR is not an
+  // ERC-20: an `allowance` call there fails, which used to fail the whole checklist.
+  const hbarMarket = {
+    ...market,
+    baseTokenId: "0.0.0",
+    baseTokenEvmAddress: "0x0000000000000000000000000000000000000000",
+    baseTokenSymbol: "HBAR",
+    baseTokenDecimals: 8,
+  };
+
+  /** A chain that behaves like the real one: an ERC-20 read at the zero address fails. */
+  const realistic = (hbarAllowance: bigint, permit2Amount = 0n): ChainReader => ({
+    readErc20Allowance: async token => {
+      if (token === "0x0000000000000000000000000000000000000000") throw new Error("HTTP request failed");
+      return 1_000_000_000n;
+    },
+    readHbarAllowance: async () => hbarAllowance,
+    readPermit2Allowance: async () => ({ amount: permit2Amount, expiration: Math.floor(NOW / 1000) + 86_400 }),
+  });
+
+  it("reads HBAR through its allowance, not an ERC-20 call that would fail", async () => {
+    const state = await deriveOnboarding(hbarMarket, OWNER, config, association(), realistic(0n), NOW);
+    expect(state.steps).toHaveLength(6);
+  });
+
+  it("needs no association for HBAR, whatever the account's settings", async () => {
+    const state = await deriveOnboarding(hbarMarket, OWNER, config, association(), realistic(0n), NOW);
+    const associate = state.steps.find(step => step.id === "associateBaseToken")!;
+    expect(associate.done).toBe(true);
+    expect(associate.native).toBe(true);
+    expect(associate.detail).toMatch(/native HBAR/);
+  });
+
+  it("asks the mirror node for the allowance granted to Permit2, by its 0.0.x id", async () => {
+    const calls: string[][] = [];
+    const reader: ChainReader = {
+      ...realistic(0n),
+      readHbarAllowance: async (owner, spenderId) => {
+        calls.push([owner, spenderId]);
+        return 0n;
+      },
+    };
+    await deriveOnboarding(hbarMarket, OWNER, config, association(), reader, NOW);
+    expect(calls).toEqual([[OWNER, config.permit2Id]]);
+  });
+
+  it("counts an HBAR allowance to Permit2 as that step done", async () => {
+    const without = await deriveOnboarding(hbarMarket, OWNER, config, association(), realistic(0n), NOW);
+    const withIt = await deriveOnboarding(hbarMarket, OWNER, config, association(), realistic(500_000_000n), NOW);
+    const step = (state: typeof without) => state.steps.find(s => s.id === "approveBaseTokenPermit2")!;
+
+    expect(step(without).done).toBe(false);
+    expect(step(withIt).done).toBe(true);
+    // Tinybars, shown in HBAR.
+    expect(step(withIt).detail).toBe("5");
+  });
+
+  it("is complete once the HBAR allowance and both Permit2 grants are in place", async () => {
+    const state = await deriveOnboarding(
+      hbarMarket,
+      OWNER,
+      config,
+      association({ associatedTokenIds: new Set([market.quoteTokenId]) }),
+      realistic(500_000_000n, 1_000_000_000n),
+      NOW,
+    );
+    expect(state.complete).toBe(true);
+  });
+
+  it("describes the HBAR steps as what they are", async () => {
+    const state = await deriveOnboarding(hbarMarket, OWNER, config, association(), realistic(0n), NOW);
+    const permit2 = state.steps.find(step => step.id === "approveBaseTokenPermit2")!;
+    expect(stepLabel(permit2)).toBe("Give Permit2 an HBAR allowance");
+    expect(stepExplanation(permit2)).toMatch(/not a token/);
   });
 });

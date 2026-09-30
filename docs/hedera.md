@@ -163,6 +163,25 @@ first, and when there is no record it says so rather than running six reads that
 fail. Any other mirror-node error is still shown as an error: an outage must not be
 mistaken for an empty account.
 
+## Native HBAR is not a token
+
+Some markets trade native HBAR rather than an HTS token — mainnet HBAR/USDC, the busiest
+one, among them. The API names it token `0.0.0` at the zero address, and the settlement
+contracts accept that, but it breaks the assumption most clients make, that every market
+token is an ERC-20:
+
+| Step | For a token | For native HBAR |
+| --- | --- | --- |
+| Associate | an HTS transaction | not needed: every account holds HBAR |
+| Allow Permit2 | ERC-20 `approve` | an **HBAR allowance** (`CryptoApproveAllowance`) |
+| Permit2 → reactor | `Permit2.approve(token, …)` | the same call, with token `0x000…000` |
+| Balance | the account's token list | the account's own balance |
+
+The reactor's HTS library spends that allowance through `cryptoTransfer`; its own comment
+says the allowance is granted "via Hedera SDK's CryptoApproveAllowance transaction".
+Reading it is easy — the mirror node lists HBAR allowances per spender, by `0.0.x` id —
+and `lib/hedera/hbar.ts` is where the template decides which path a token takes.
+
 ## Why this belongs on Hedera
 
 Not because an order book needs a ledger — it does not, and SaucerSwap's runs off-chain.

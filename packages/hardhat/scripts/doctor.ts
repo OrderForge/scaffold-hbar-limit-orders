@@ -33,6 +33,8 @@ const CONFIG = {
     rpc: process.env.HEDERA_RPC_URL || "https://testnet.hashio.io/api",
     reactor: "0x5707B946EE64bD750A587261Ce36ec7024F3088B",
     permit2: "0x2e2C4f4277183F2BC5eb982CD4cD27C1fb01c6Ed",
+    permit2Id: "0.0.8991877",
+    mirror: "https://testnet.mirrornode.hedera.com",
     chainId: 296,
   },
   mainnet: {
@@ -40,6 +42,8 @@ const CONFIG = {
     rpc: "https://mainnet.hashio.io/api",
     reactor: "0xa2c2713E82B47DCB3B0bae75199C81fcd185b86C",
     permit2: "0x8D53a86b10b503f284A0EA9e8316bc6081432A96",
+    permit2Id: "0.0.10527448",
+    mirror: "https://mainnet.mirrornode.hedera.com",
     chainId: 295,
   },
 }[NETWORK as "testnet" | "mainnet"];
@@ -209,6 +213,14 @@ const contractChecks = async () => {
       "reactor still settles through the pinned Permit2",
       permit2.toLowerCase() === CONFIG.permit2.toLowerCase(),
       `reactor.permit2() = ${permit2}, config says ${CONFIG.permit2}`,
+    );
+
+    // An HBAR allowance names its spender by 0.0.x, so native-HBAR markets depend on this.
+    const contract = await (await fetch(`${CONFIG.mirror}/api/v1/contracts/${CONFIG.permit2}`)).json();
+    check(
+      "Permit2's Hedera id matches the pinned one",
+      contract.contract_id === CONFIG.permit2Id,
+      `mirror node says ${contract.contract_id}, config says ${CONFIG.permit2Id}`,
     );
   } catch (error) {
     check("reactor.permit2() readable", false, (error as Error).message.split("\n")[0]);

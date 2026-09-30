@@ -126,12 +126,20 @@ const StepRow = ({
           </div>
         </div>
 
-        {!step.done && (
+        {!step.done && !(step.native && step.kind === "approvePermit2") && (
           <button type="button" className="btn btn-primary btn-xs" onClick={run} disabled={isPending}>
             {isPending ? "confirm in wallet…" : "Do it"}
           </button>
         )}
       </div>
+
+      {!step.done && step.native && step.kind === "approvePermit2" && (
+        <p className="ml-7 text-xs opacity-70">
+          Grant an HBAR allowance to Permit2 (<span className="font-mono">{config.permit2Id}</span>) from a wallet that
+          supports HBAR allowances, such as HashPack. This template does not send that transaction yet, so this step
+          updates once the mirror node sees it.
+        </p>
+      )}
 
       {step.satisfiedByAutoAssociation && (
         <p className="ml-7 text-xs opacity-60">

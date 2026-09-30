@@ -6,7 +6,7 @@ reactor's verified source, then comparing against
 Each one is handled in code and covered by a test or a fixture in
 `packages/nextjs/test/`.
 
-Verified on testnet and mainnet, 2026-09-19 → 2026-09-21.
+Verified on testnet and mainnet, 2026-09-19 → 2026-09-30.
 
 ## 1. The API sends no CORS headers, so no browser can call it directly
 
@@ -107,3 +107,27 @@ instead, with no division at all. Caught by a test, not by review.
 1 pip = 1e-6 = 0.0001%, so `takerFeePips: 2000` is 0.2%. Read as basis points, which is the
 common assumption, that becomes 20% — a hundredfold error in the user's favour right up
 until they submit.
+
+## 14. Native HBAR is the zero address, and is approved with an HBAR allowance
+
+Mainnet HBAR/USDC — the busiest market — trades native HBAR, not a token. Nothing in the
+docs says how that works. What the API and the reactor's verified source actually do:
+
+- `/books` reports the base as token `0.0.0` with EVM address `0x000…000`, and
+  `/orders/build` uses the zero address as the order's input or output token.
+- The reactor's `CurrencyLibrary` treats the zero address as native, and pays native HBAR
+  out directly.
+- HBAR is not an ERC-20. An `allowance()` call at the zero address fails, and there is no
+  `approve()` to call. Permit2 instead spends a native Hedera **HBAR allowance** granted to
+  it (`CryptoApproveAllowance`), through the HTS precompile's `cryptoTransfer`.
+- There is nothing to associate. `GET /onboarding/1/status` marks `associateBaseToken` done
+  for any account, and still lists both HBAR approval steps as pending.
+
+A client that treats every market token as an ERC-20 fails on this market in two places.
+The readiness check reads an allowance that cannot exist, and the balance check asks the
+account's token list for `0.0.0` and finds nothing. The template handles both
+(`lib/hedera/hbar.ts`): HBAR's Permit2 step is read from the mirror node's
+`/accounts/{id}/allowances/crypto`, filtered by Permit2's `0.0.x` id, and its balance is
+the account's own. It does not yet send the HBAR allowance itself; the checklist says how
+to grant it instead.
+

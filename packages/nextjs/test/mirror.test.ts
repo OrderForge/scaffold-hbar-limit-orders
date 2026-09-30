@@ -72,3 +72,29 @@ describe("reading an account", () => {
     expect(account?.maxAutomaticTokenAssociations).toBe(-1);
   });
 });
+
+describe("an HBAR allowance", () => {
+  // HBAR has no ERC-20 allowance. Native-HBAR markets settle through an HBAR allowance
+  // granted to Permit2, which only the mirror node reports.
+  it("returns what is left of the allowance, for the spender asked about", async () => {
+    fetchMock.mockResolvedValue(
+      json({
+        allowances: [{ owner: "0.0.1", spender: "0.0.10527448", amount: 250_000_000, amount_granted: 500_000_000 }],
+      }),
+    );
+    await expect(mirror.getHbarAllowance("0.0.1", "0.0.10527448")).resolves.toBe(250_000_000n);
+    expect(String(fetchMock.mock.calls[0][0])).toContain("spender.id=0.0.10527448");
+  });
+
+  it("is zero when none has been granted", async () => {
+    fetchMock.mockResolvedValue(json({ allowances: [] }));
+    await expect(mirror.getHbarAllowance("0.0.1", "0.0.10527448")).resolves.toBe(0n);
+  });
+
+  it("is zero for an account with no record, and throws for anything else", async () => {
+    fetchMock.mockResolvedValue(json({}, 404));
+    await expect(mirror.getHbarAllowance("0.0.1", "0.0.10527448")).resolves.toBe(0n);
+    fetchMock.mockResolvedValue(json({}, 500));
+    await expect(mirror.getHbarAllowance("0.0.1", "0.0.10527448")).rejects.toThrow();
+  });
+});

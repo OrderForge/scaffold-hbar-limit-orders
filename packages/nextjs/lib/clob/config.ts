@@ -25,6 +25,12 @@ export type ClobNetworkConfig = {
    */
   reactor: `0x${string}`;
   permit2: `0x${string}`;
+  /**
+   * Permit2's Hedera id. The mirror node names an HBAR allowance's spender by `0.0.x`,
+   * not by EVM address, so reading one needs this. Resolved from the mirror node's
+   * `/contracts/{evm}`; `clob:doctor` checks the two still agree.
+   */
+  permit2Id: string;
 };
 
 export const CLOB_NETWORKS: Record<ClobNetwork, ClobNetworkConfig> = {
@@ -36,6 +42,7 @@ export const CLOB_NETWORKS: Record<ClobNetwork, ClobNetworkConfig> = {
     chainId: 296,
     reactor: "0x5707B946EE64bD750A587261Ce36ec7024F3088B",
     permit2: "0x2e2C4f4277183F2BC5eb982CD4cD27C1fb01c6Ed",
+    permit2Id: "0.0.8991877",
   },
   mainnet: {
     network: "mainnet",
@@ -45,6 +52,7 @@ export const CLOB_NETWORKS: Record<ClobNetwork, ClobNetworkConfig> = {
     chainId: 295,
     reactor: "0xa2c2713E82B47DCB3B0bae75199C81fcd185b86C",
     permit2: "0x8D53a86b10b503f284A0EA9e8316bc6081432A96",
+    permit2Id: "0.0.10527448",
   },
 };
 

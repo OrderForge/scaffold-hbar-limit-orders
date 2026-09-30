@@ -24,7 +24,13 @@ export const useOnboarding = (market: Orderbook | null | undefined) => {
     queryFn: async ({ signal }) => {
       if (!market || !address || !publicClient) return null;
       const association = await readAssociation(mirror, address, signal);
-      return deriveOnboarding(market, address as `0x${string}`, config, association, viemChainReader(publicClient));
+      return deriveOnboarding(
+        market,
+        address as `0x${string}`,
+        config,
+        association,
+        viemChainReader(publicClient, mirror),
+      );
     },
     // Cheap enough to re-check often, and it must reflect a transaction promptly — but a
     // check that is failing should back off rather than retry every 15 seconds forever.

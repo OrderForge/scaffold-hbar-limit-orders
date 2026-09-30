@@ -16,6 +16,7 @@
 import { ClobNetworkConfig } from "../clob/config";
 import { Orderbook } from "../clob/types";
 import { MirrorClient } from "../mirror/client";
+import { isNativeHbar } from "./hbar";
 
 export type OnboardingStepId =
   | "associateBaseToken"
@@ -45,6 +46,11 @@ export type OnboardingStep = {
   satisfiedByAutoAssociation?: boolean;
   /** Current on-chain value behind the check, for display. */
   detail?: string;
+  /**
+   * The token is native HBAR, which follows different rules: nothing to associate, and an
+   * HBAR allowance to Permit2 instead of an ERC-20 approve. See `hbar.ts`.
+   */
+  native?: boolean;
 };
 
 export type OnboardingState = {
@@ -90,6 +96,11 @@ const PERMIT2_ALLOWANCE_ABI = [
 /** Minimal shape of the reads this module needs, so it can be tested without a chain. */
 export type ChainReader = {
   readErc20Allowance: (token: `0x${string}`, owner: `0x${string}`, spender: `0x${string}`) => Promise<bigint>;
+  /**
+   * Native HBAR's allowance to a spender, in tinybars. HBAR has no ERC-20 `allowance` —
+   * calling one at the zero address fails — so this comes from the mirror node.
+   */
+  readHbarAllowance: (owner: `0x${string}`, spenderId: string) => Promise<bigint>;
   readPermit2Allowance: (
     permit2: `0x${string}`,
     owner: `0x${string}`,
@@ -98,7 +109,11 @@ export type ChainReader = {
   ) => Promise<{ amount: bigint; expiration: number }>;
 };
 
-export const viemChainReader = (client: { readContract: (args: any) => Promise<any> }): ChainReader => ({
+export const viemChainReader = (
+  client: { readContract: (args: any) => Promise<any> },
+  mirror: Pick<MirrorClient, "getHbarAllowance">,
+): ChainReader => ({
+  readHbarAllowance: (owner, spenderId) => mirror.getHbarAllowance(owner, spenderId),
   readErc20Allowance: (token, owner, spender) =>
     client.readContract({
       address: token,
@@ -198,6 +213,21 @@ export const deriveOnboarding = async (
   const steps: OnboardingStep[] = [];
 
   for (const token of sides) {
+    if (isNativeHbar(token.tokenId)) {
+      steps.push({
+        id: token.side === "base" ? "associateBaseToken" : "associateQuoteToken",
+        kind: "associate",
+        side: token.side,
+        tokenId: token.tokenId,
+        tokenEvmAddress: token.evm,
+        tokenSymbol: token.symbol,
+        done: true,
+        detail: "native HBAR — nothing to associate",
+        native: true,
+      });
+      continue;
+    }
+
     const associated = association.associatedTokenIds.has(token.tokenId);
     steps.push({
       id: token.side === "base" ? "associateBaseToken" : "associateQuoteToken",
@@ -216,8 +246,16 @@ export const deriveOnboarding = async (
   // call for an owner that does not exist reverts with INVALID_ACCOUNT_ID, which is a
   // confusing way to say "you have not funded this address". Skip the reads and report
   // the real state instead.
+  // Native HBAR has no ERC-20 allowance to read — the call fails at the zero address — so
+  // its "approve to Permit2" is the HBAR allowance the account has granted Permit2.
   const [baseToPermit2, quoteToPermit2] = association.accountExists
-    ? await Promise.all(sides.map(token => chain.readErc20Allowance(token.evm, owner, config.permit2)))
+    ? await Promise.all(
+        sides.map(token =>
+          isNativeHbar(token.tokenId)
+            ? chain.readHbarAllowance(owner, config.permit2Id)
+            : chain.readErc20Allowance(token.evm, owner, config.permit2),
+        ),
+      )
     : [0n, 0n];
 
   const [baseToReactor, quoteToReactor] = association.accountExists
@@ -240,6 +278,7 @@ export const deriveOnboarding = async (
       tokenSymbol: token.symbol,
       done: allowance > 0n,
       detail: formatAllowance(allowance, token.decimals),
+      native: isNativeHbar(token.tokenId) || undefined,
     });
   });
 
@@ -250,6 +289,7 @@ export const deriveOnboarding = async (
     steps.push({
       id: token.side === "base" ? "approveBaseTokenReactor" : "approveQuoteTokenReactor",
       kind: "approveReactor",
+      native: isNativeHbar(token.tokenId) || undefined,
       side: token.side,
       tokenId: token.tokenId,
       tokenEvmAddress: token.evm,
@@ -290,7 +330,7 @@ export const stepLabel = (step: OnboardingStep): string => {
     case "associate":
       return `Associate ${step.tokenSymbol}`;
     case "approvePermit2":
-      return `Approve ${step.tokenSymbol} to Permit2`;
+      return step.native ? "Give Permit2 an HBAR allowance" : `Approve ${step.tokenSymbol} to Permit2`;
     case "approveReactor":
       return `Allow the reactor to spend ${step.tokenSymbol}`;
   }
@@ -299,9 +339,13 @@ export const stepLabel = (step: OnboardingStep): string => {
 export const stepExplanation = (step: OnboardingStep): string => {
   switch (step.kind) {
     case "associate":
-      return "Hedera accounts must associate a token before they can hold it. Without this, a fill could not pay you.";
+      return step.native
+        ? "Native HBAR needs no association: every Hedera account can hold it."
+        : "Hedera accounts must associate a token before they can hold it. Without this, a fill could not pay you.";
     case "approvePermit2":
-      return "Settlement pulls your funds through Permit2, so the token itself must allow Permit2 to move it.";
+      return step.native
+        ? "HBAR is not a token, so there is nothing to approve in the ERC-20 sense. Settlement spends a native Hedera HBAR allowance granted to Permit2 instead."
+        : "Settlement pulls your funds through Permit2, so the token itself must allow Permit2 to move it.";
     case "approveReactor":
       return "Permit2 then grants the settlement contract a capped, expiring allowance. Nothing can move more than this, and only until it expires.";
   }
