@@ -23,6 +23,9 @@ works too.
 
 <p align="center"><em>Live mainnet markets. No wallet, no API key, no deployed contract.</em></p>
 
+> **New here?** [**Build it yourself**](docs/tutorial.md) walks you from an empty folder to a filled order
+> you have verified on-chain, in seven chapters — the first two need no wallet and no keys.
+
 ## Contents
 
 1. [Run it in 60 seconds](#run-it-in-60-seconds) — no keys, no wallet
@@ -33,9 +36,9 @@ works too.
 6. [Set up the on-chain half](#set-up-the-on-chain-half) — keys, journal topic, test tokens
 7. [Configuration](#configuration) — [modes](#modes), networks, environment
 8. [Reference](#reference) — commands, layout, wallet setup, units
-9. [Documentation](#documentation) — the four guides, and which to read first
+9. [Documentation](#documentation) — the tutorial, the guides, and which to read first
 10. [What this does not do](#what-this-does-not-do)
-11. [Troubleshooting](#troubleshooting)
+11. [Common issues](#common-issues) — the errors you are likely to meet, and what they mean
 
 ## Run it in 60 seconds
 
@@ -480,7 +483,8 @@ would have failed the moment testnet halted — testing the venue rather than th
 
 | Guide | What is in it |
 | --- | --- |
-| [docs/microstructure.md](docs/microstructure.md) | Tick and lot grids, the minimum-notional units trap, pips vs basis points, crossed books, AMM routing, and how depth is reconciled. **Read this one if you read only one.** |
+| [docs/tutorial.md](docs/tutorial.md) | **Build it yourself**, in seven chapters: scaffold, read a market, fund an account, onboard a wallet, journal to HCS, place and cancel an order, then get a fill and verify it. Each chapter has the commands, what you should see, and the file to read. **Start here.** |
+| [docs/microstructure.md](docs/microstructure.md) | Tick and lot grids, the minimum-notional units trap, pips vs basis points, crossed books, AMM routing, and how depth is reconciled. Read this after the tutorial. |
 | [docs/integration.md](docs/integration.md) | The endpoint map as the API really behaves, both auth schemes, the order-placing details that each cost an order if missed, and what to copy into your own client. |
 | [docs/hedera.md](docs/hedera.md) | The trust boundary, each Hedera service and its job, why an address is not yet an account, and what fill verification does and does not prove. |
 | [docs/DISCREPANCIES.md](docs/DISCREPANCIES.md) | Fifteen places where the live API differs from its own documentation, each handled in code — including how native HBAR is traded and what a settlement transaction really contains. |
@@ -504,20 +508,52 @@ would have failed the moment testnet halted — testing the venue rather than th
 - **Keyless market data is a rollout, not a guarantee.** If a network has not had it yet, public reads
   answer `401` and the app says so instead of showing a login prompt nobody can satisfy.
 
-## Troubleshooting
+## Common issues
 
-**The readiness checklist says the address has no account.** On Hedera an address exists once it has
-received HBAR, and not before. Fund it from the [faucet](https://portal.hedera.com/faucet) and the six
+Each of these has happened while building this template. The message you see is in bold.
+
+**`npm create` scaffolds the default template, not this one.** npm keeps flags before `--` for itself, so
+`--template` never reaches the scaffolder. Use `npm create scaffold-hbar@latest -- --template OrderForge/scaffold-hbar-limit-orders`.
+
+**"This address has no account on testnet yet."** On Hedera an address becomes an account when it first
+receives HBAR, and not before. Fund it from the [faucet](https://portal.hedera.com/faucet) and the six
 steps appear. The built-in burner wallet always starts in this state.
 
-**CORS errors with hashio.io RPC.** Set `NEXT_PUBLIC_HEDERA_TESTNET_RPC_URL` in `packages/nextjs/.env`
+**"This market is halted and is not accepting new orders."** The venue has paused the market — on
+testnet, usually because its settlement service ran out of HBAR. The order is refused before you sign;
+if you sign anyway, `/orders/build` succeeds and `/orders/save` answers `400`. Read mainnet in the
+meantime, and ask in SaucerSwap's Discord.
+
+**"Price must be a multiple of the tick size…" / "Size must be a whole number of lots…"** Every market
+has a price grid and a size grid, and the ticket names the nearest allowed value. Lot and minimum
+order value are in the token's smallest units, not decimals — see
+[microstructure.md](docs/microstructure.md#minimum-notional-the-units-trap).
+
+**An allowance read fails with `0x494e5641…`.** That is ASCII `INVA`, the start of `INVALID_ACCOUNT_ID`:
+the owner address has no Hedera account yet. Fund it first. The checklist does not ask the chain until
+the mirror node knows the account.
+
+**The order stays at "Filled on Hedera", waiting.** A limit order only fills when someone trades at your
+price. Post-only orders never take liquidity; untick it, or price at the best ask, to fill straight away.
+
+**"Cancel requested", but the order is still active.** A `202` from the venue is an acknowledgement, not
+a cancellation. The row changes to `CANCELED` once the order's history confirms it, usually within
+seconds; until then it can still fill.
+
+**Fill verification says "check failed".** Read which check. Before trusting it, make sure you are
+signed in as the account that placed the order: fills are matched to an order by swapper and nonce.
+
+**CORS errors with the hashio.io RPC.** Set `NEXT_PUBLIC_HEDERA_TESTNET_RPC_URL` in `packages/nextjs/.env`
 to a CORS-enabled endpoint (for example [Arkhia](https://arkhia.io/)), or rely on wallet-connected
 operations, since wallets handle RPC internally.
 
 **The journal page is empty.** A topic id exists on one network only. If you are reading a different
 network than the topic was created on, the page says so — set `NEXT_PUBLIC_JOURNAL_NETWORK` to match.
 
-**Deployer shows an EVM address, not a Hedera account id.** `yarn hardhat:account:generate` prints the
+**`next build` fails with odd missing-chunk errors.** A dev server is still running and sharing `.next`.
+Stop it before building.
+
+**The deployer shows an EVM address, not a Hedera account id.** `yarn hardhat:account:generate` prints the
 `0x…` form. Both that and `0.0.xxxxx` work with the [faucet](https://portal.hedera.com/faucet).
 
 ## Links
