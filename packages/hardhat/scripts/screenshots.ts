@@ -145,6 +145,19 @@ const main = async () => {
     await settle("/Open \\(|Past \\(|No orders yet/.test(document.body.innerText)");
     await shot("orders");
 
+    // A verified fill, when the account has one: the most recent FILLED order's history,
+    // with the checks read from the settlement on-chain.
+    // Case-sensitive, so the "Filled" column header does not match; no word boundaries,
+    // because the text Playwright matches runs the cells together ("99.00%FILLEDhistory").
+    const filledRow = page.locator("tbody tr", { hasText: /FILLED/ }).first();
+    if (await filledRow.count()) {
+      await filledRow.getByRole("button", { name: "history" }).click();
+      await settle("/verified|check failed/.test(document.body.innerText)", 60_000);
+      await shotOf(page.locator("div.fixed > div").first(), "fill");
+      await page.getByRole("button", { name: "close" }).first().click();
+      await page.waitForTimeout(500);
+    }
+
     await page.getByRole("link", { name: "Journal" }).first().click();
     // Wait for the journal itself: the page being navigated away from also satisfies
     // "not loading", which is how an earlier run captured the orders page twice.

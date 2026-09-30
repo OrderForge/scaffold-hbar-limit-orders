@@ -114,9 +114,8 @@ contracts — rather than from the venue's view of your account.
 
 ![A market page with a wallet connected: depth streaming over the WebSocket, and all six onboarding steps green](docs/images/wallet.png)
 
-<p align="center"><em>Signed in: depth switches from polling to the WebSocket, and the six on-chain
-onboarding steps are checked against the chain. This market is halted, which the page says plainly
-rather than hiding.</em></p>
+<p align="center"><em>Testnet SAUCE/USDC, signed in: depth switches from polling to the WebSocket, and the
+six on-chain onboarding steps are checked against the chain.</em></p>
 
 The order ticket validates before it asks your wallet for anything: an off-tick price, a size
 that is not a whole lot, or an order below the minimum notional is named and refused here
@@ -127,15 +126,26 @@ rather than rejected by the venue after you have signed it.
 </p>
 
 <p align="center"><em>Buy or sell, post-only to guarantee the maker fee, and AMM settlement opt-in
-per order. The total and the fee are shown before signing — including on a halted market, where the
-order cannot be placed but the arithmetic still answers "what would this cost?".</em></p>
+per order. The total and the fee are shown before signing — on a halted market too, where the order
+cannot be placed but the arithmetic still answers "what would this cost?".</em></p>
 
 Signing in exchanges a wallet signature for a short-lived API token, which never leaves memory.
 
-![The orders page, signed in, showing a past order with its status and history](docs/images/orders.png)
+![The orders page, signed in, listing orders placed, filled and cancelled on testnet](docs/images/orders.png)
 
-<p align="center"><em>Your orders, read from SaucerSwap with a token held in memory only. Every fill is
-checked against the order you signed.</em></p>
+<p align="center"><em>Your orders, read from SaucerSwap with a token held in memory only — real testnet
+orders, filled and cancelled.</em></p>
+
+Open a filled order and every fill is checked on-chain against what you signed. The settlement is read
+from the mirror node, the fill that belongs to this order is picked out of it by swapper and nonce, and
+four things are checked: price, fee cap, deadline and size.
+
+<p align="center">
+  <img src="docs/images/fill.png" width="420" alt="A filled order's history with its fill verification: a taker fill, verified, with price, fee cap, deadline and size checks all passing" />
+</p>
+
+<p align="center"><em>Order 3506715 on testnet: placed, filled two seconds later, and verified — filled
+under the limit, a 1,997-pip fee under a 2,000-pip cap, before the deadline, within the size signed.</em></p>
 
 ![The journal page listing signed intents with their consensus timestamps and EIP-712 digests](docs/images/journal.png)
 
