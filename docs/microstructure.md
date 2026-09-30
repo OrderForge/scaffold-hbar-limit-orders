@@ -46,6 +46,11 @@ Two separate rules, often confused:
 That is why every level of the real book is a multiple of 10 SAUCE. An order for 27 SAUCE
 is not "close enough"; it is invalid.
 
+The grid also explains an order that finishes `FILLED` at 99.78%. Order 3504309 bought 10
+SAUCE for up to 0.435 USDC, filled at 0.0434055, and spent 0.434055: the 0.000945 USDC left
+over could not buy another lot, so the venue closed it with the reason `LATTICE_RESIDUAL`.
+Dust like that is expected, not a partial fill to chase.
+
 ## Minimum notional: the units trap
 
 `minNotional` is the smallest total value an order may carry — price times size, in the

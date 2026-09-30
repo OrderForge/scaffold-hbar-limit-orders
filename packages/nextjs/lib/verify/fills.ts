@@ -246,6 +246,25 @@ export const verifyFill = (
   return { fill, checks, ok: checks.every(check => check.ok) };
 };
 
+/**
+ * The fills in a settlement that belong to one order.
+ *
+ * A settlement transaction is not one order's receipt. The filler batches matches, so a
+ * single transaction carries the fills of every party it settled: the order you placed,
+ * the makers it matched against, and unrelated matches settled alongside. The first live
+ * testnet fill held four fills from three accounts, and only one was ours.
+ *
+ * Checking all of them against your order reports someone else's fee as yours and adds
+ * their size to your total. So fills are matched on the two things that identify an
+ * order on-chain: the swapper who signed it, and its nonce, which is unique per swapper.
+ */
+export const fillsForOrder = (fills: Fill[], order: { swapper: string; nonce?: bigint | string | number }): Fill[] =>
+  fills.filter(
+    fill =>
+      fill.swapper.toLowerCase() === order.swapper.toLowerCase() &&
+      (order.nonce === undefined || order.nonce === null || fill.nonce === BigInt(order.nonce)),
+  );
+
 /** Verify a run of fills for one order, carrying the cumulative total forward. */
 export const verifyFills = (
   order: SignedOrderReference,

@@ -121,8 +121,15 @@ browser reads it directly.
 ## Fill verification, concretely
 
 Each settlement emits `TakerFill` or `MakerFill` from the reactor, carrying the order hash,
-the amounts and the fee. Those logs are on Hedera, so the checks do not depend on the venue
-reporting its own behaviour:
+the swapper, its nonce, the amounts and the fee. Those logs are on Hedera, so the checks do
+not depend on the venue reporting its own behaviour.
+
+**A settlement transaction is not one order's receipt.** The filler batches matches: the
+first live fill here, order 3504309, shared its transaction with the maker it matched and an
+unrelated match between two other accounts — four fills from three accounts, one of them
+ours. The first version of these checks read every fill in the transaction against the order,
+and reported other traders' fees as failures. Fills are now matched to an order by its
+**swapper and nonce** before anything is checked; the real transaction is a test fixture.
 
 | Check | Question |
 | --- | --- |

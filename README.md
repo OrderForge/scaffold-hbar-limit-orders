@@ -266,7 +266,9 @@ journal without sending it anywhere.
 | --- | --- |
 | HCS journal topic | [`0.0.10662192`](https://hashscan.io/testnet/topic/0.0.10662192) |
 | Permit2 onboarding (4 transactions) | [SAUCE→Permit2](https://hashscan.io/testnet/transaction/0x490de469a1d0f08a825a80a79c8c6b12a9ca840939ea6f7239831fdffda37083), [Permit2→reactor](https://hashscan.io/testnet/transaction/0x0e9462293d2374b80222f2dba26b6868a538899cb34d5682e5ca49135de2379d), [USDC→Permit2](https://hashscan.io/testnet/transaction/0xdfa33dfdba54534f33d37987224a4ad6d89b9db4f1e1a729c99e2148f031a512), [Permit2→reactor](https://hashscan.io/testnet/transaction/0x488f4b370b19eaf740be8f7293cf35cd06f38bd0ccb4ca3a52f0d815f6d8c994) |
-| Order placed and cancelled | order 3494124 on book 3, 2026-09-19 |
+| Order placed and cancelled | orders 3494124 (2026-09-19) and 3504259 (2026-09-30) on book 3: `ACTIVE` → `CANCELED` in about a second |
+| Order filled, then verified | order 3504309, BUY 10 SAUCE at 0.0435 — [settlement](https://hashscan.io/testnet/transaction/0xd329c0b88e4e98f1be541255f3a88e8761979aaf0acdf9b91968b5b8465fac76), filled at 0.0434055, fee 1,999.7 pips under a 2,000 cap; all four fill checks pass against the journalled intent |
+| HBAR allowance via HIP-906 | [`hbarApprove` to Permit2](https://hashscan.io/testnet/transaction/0x53182bbafe0737b9ae7014f461ece4caecb987e58843cbcccab923053152d111), sent to the account's own address: allowance 0 → 1 HBAR on the mirror node |
 
 ## Configuration
 
@@ -287,10 +289,10 @@ silently — once a wallet is connected the viewed network follows the wallet, a
 deliberately reading the other network marks everything wallet-related read-only until the
 two agree.
 
-Testnet liquidity is thin. At the time of writing, testnet has one market that has ever
-been open (book 3, SAUCE/USDC) and it has been halted since 2026-09-20, which is exactly
-why the mainnet-read mode exists and why the app renders halted and empty books as
-first-class states rather than errors.
+Testnet liquidity is thin. At the time of writing, testnet has one open market (book 3,
+SAUCE/USDC), and it was halted from 2026-09-19 to 2026-09-30 while its settlement service
+was out of HBAR. That is why the mainnet-read mode exists, and why the app renders halted
+and empty books as first-class states rather than errors.
 
 ### Optional features
 
@@ -427,7 +429,7 @@ packages/nextjs/
   lib/hedera/    the six onboarding steps, derived from chain reads
   lib/journal/   HCS order-intent records
   lib/verify/    fill verification against the signed order
-  test/          183 unit tests, offline against fixtures captured from the live API
+  test/          190 unit tests, offline against fixtures captured from the live API
 docs/            microstructure, integration, hedera, discrepancies
 .harness/        harness spec, increment PRDs, validators
 ```
@@ -471,7 +473,7 @@ would have failed the moment testnet halted — testing the venue rather than th
 | [docs/microstructure.md](docs/microstructure.md) | Tick and lot grids, the minimum-notional units trap, pips vs basis points, crossed books, AMM routing, and how depth is reconciled. **Read this one if you read only one.** |
 | [docs/integration.md](docs/integration.md) | The endpoint map as the API really behaves, both auth schemes, the order-placing details that each cost an order if missed, and what to copy into your own client. |
 | [docs/hedera.md](docs/hedera.md) | The trust boundary, each Hedera service and its job, why an address is not yet an account, and what fill verification does and does not prove. |
-| [docs/DISCREPANCIES.md](docs/DISCREPANCIES.md) | Fourteen places where the live API differs from its own documentation, each handled in code — including how native HBAR is traded. |
+| [docs/DISCREPANCIES.md](docs/DISCREPANCIES.md) | Fifteen places where the live API differs from its own documentation, each handled in code — including how native HBAR is traded and what a settlement transaction really contains. |
 | [AGENTS.md](AGENTS.md) | For coding agents: key paths, the money rules, and the mistakes that are easy to make here. |
 
 ## What this does not do

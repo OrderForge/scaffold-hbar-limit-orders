@@ -133,6 +133,18 @@ the account's own.
 A wallet grants the HBAR allowance through HIP-906: `hbarApprove(spender, amount)` (selector
 `0x86aff07c`), sent to the account's **own EVM address**, which Hedera redirects to the
 Account Service system contract. It must be the EVM alias — the long-zero form of the same
-account is not redirected and returns nothing. Simulated on testnet from a funded account,
-the call returns response code 22 (SUCCESS) at about 783k gas.
+account is not redirected and returns nothing. Sent for real on testnet
+([`0x53182bba…`](https://hashscan.io/testnet/transaction/0x53182bbafe0737b9ae7014f461ece4caecb987e58843cbcccab923053152d111)),
+it succeeded at 727,020 gas, and the mirror node's allowance for Permit2 went from 0 to
+100,000,000 tinybars.
 
+## 15. One settlement transaction settles several orders
+
+Nothing in the docs says what a settlement transaction contains. In practice the filler
+batches: testnet order 3504309's settlement also settled the maker it matched and an
+unrelated match between two other accounts — four `TakerFill`/`MakerFill` events from three
+accounts. A client that reads "the fills in my settlement transaction" as "my fills"
+attributes other traders' fees and sizes to its own order. Match fills to an order by the
+event's `swapper` and `nonce`; the venue's order record carries the nonce, and it is unique
+per swapper. Handled in `fillsForOrder` (`lib/verify/fills.ts`), tested against that
+transaction.

@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useAccount } from "wagmi";
 import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
 import { getJournalNetwork, getNetworkConfig } from "~~/lib/clob/config";
@@ -8,7 +9,7 @@ import { orderAmounts } from "~~/lib/clob/orders";
 import { AccountOrder, OrderEvent, Orderbook } from "~~/lib/clob/types";
 import { JournalEntry, listIntents } from "~~/lib/journal";
 import { hashscan } from "~~/lib/mirror/client";
-import { FillVerification, SignedOrderReference, decodeFills, verifyFills } from "~~/lib/verify/fills";
+import { FillVerification, SignedOrderReference, decodeFills, fillsForOrder, verifyFills } from "~~/lib/verify/fills";
 
 /**
  * Rebuild what the user signed.
@@ -21,6 +22,7 @@ const referenceFrom = (
   order: AccountOrder,
   market: Orderbook,
   journal: JournalEntry[] | undefined,
+  swapper: string,
 ): { reference: SignedOrderReference; source: "journal" | "venue" } | null => {
   const fromJournal = journal?.find(
     entry => entry.intent.nonce !== undefined && String(entry.intent.nonce) === String(order.nonce),
@@ -35,7 +37,7 @@ const referenceFrom = (
     const amounts = orderAmounts(side, price, size, market);
     return {
       reference: {
-        swapper: "",
+        swapper,
         inputAmount: BigInt(amounts.inputAmount),
         outputAmount: BigInt(amounts.outputAmount),
         recipient: "",
@@ -80,9 +82,13 @@ export const FillChecks = ({
   events: OrderEvent[];
 }) => {
   const { config, mirror, network } = useClobNetwork();
+  const { address } = useAccount();
   const links = hashscan(config);
 
-  const settlements = events.filter(event => Boolean(event.txHash));
+  // One settlement can appear under more than one event; read each transaction once.
+  const settlements = events
+    .filter(event => Boolean(event.txHash))
+    .filter((event, index, all) => all.findIndex(other => other.txHash === event.txHash) === index);
 
   const { data: journal } = useQuery({
     queryKey: ["journal", network, "for-order", order.nonce],
@@ -91,17 +97,26 @@ export const FillChecks = ({
   });
 
   const { data: verifications, isLoading } = useQuery<FillVerification[]>({
-    queryKey: ["verify", network, order.id, settlements.map(event => event.txHash).join(",")],
+    queryKey: ["verify", network, address, order.id, settlements.map(event => event.txHash).join(",")],
     enabled: settlements.length > 0,
     queryFn: async ({ signal }) => {
-      const built = referenceFrom(order, market, journal);
-      if (!built) return [];
+      // Whose fills to look for: the signed-in account, which is the account these orders
+      // belong to, or the journal's record of who signed.
+      const swapper = address ?? "";
+      const built = referenceFrom(order, market, journal, swapper);
+      if (!built || !swapper) return [];
 
       const fills: { fill: any; filledAt?: Date }[] = [];
       for (const event of settlements) {
         const result = await mirror.getContractResult(event.txHash as string, signal);
         if (!result) continue;
-        for (const fill of decodeFills(result.logs ?? [], config.reactor)) {
+        // Only this order's fills: the transaction also settles the other side, and often
+        // other matches entirely.
+        const mine = fillsForOrder(decodeFills(result.logs ?? [], config.reactor), {
+          swapper,
+          nonce: order.nonce ?? undefined,
+        });
+        for (const fill of mine) {
           fills.push({ fill: { ...fill, transactionHash: event.txHash }, filledAt: new Date(event.timestamp) });
         }
       }
@@ -118,7 +133,7 @@ export const FillChecks = ({
     );
   }
 
-  const source = referenceFrom(order, market, journal)?.source;
+  const source = referenceFrom(order, market, journal, address ?? "")?.source;
 
   return (
     <div className="mt-6">
@@ -130,6 +145,15 @@ export const FillChecks = ({
       </p>
 
       {isLoading && <p className="mt-3 text-xs opacity-60">Reading settlements from the mirror node…</p>}
+
+      {!isLoading && verifications && verifications.length === 0 && (
+        // Not a pass and not a failure: the settlement was found but holds nothing that
+        // identifies as this order, so there is nothing to check yet.
+        <p className="mt-3 text-xs opacity-70">
+          The settlement transaction was read, but none of its fills carry this account and this order&apos;s nonce. If
+          the mirror node has only just seen it, try again in a few seconds.
+        </p>
+      )}
 
       {verifications?.map((verification, index) => (
         <div key={index} className="mt-3 rounded-box bg-base-200 p-3">
