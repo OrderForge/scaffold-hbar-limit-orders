@@ -94,10 +94,25 @@ export const FillChecks = ({
     queryKey: ["journal", network, "for-order", order.nonce],
     queryFn: ({ signal }) => listIntents(getNetworkConfig(getJournalNetwork()), { signal }),
     staleTime: 30_000,
+    // A journal message reaches the mirror node a few seconds after it is written, so an
+    // order opened straight after placing can be checked before its record is readable.
+    // Keep looking for a minute rather than settle for checking the venue against itself.
+    refetchInterval: query => {
+      const found = query.state.data?.some(entry => String(entry.intent.nonce) === String(order.nonce));
+      const young = Date.now() - new Date(order.createdAt ?? 0).getTime() < 60_000 * 5;
+      return found || !young ? false : 5_000;
+    },
   });
 
   const { data: verifications, isLoading } = useQuery<FillVerification[]>({
-    queryKey: ["verify", network, address, order.id, settlements.map(event => event.txHash).join(",")],
+    queryKey: [
+      "verify",
+      network,
+      address,
+      order.id,
+      settlements.map(event => event.txHash).join(","),
+      journal?.length ?? 0,
+    ],
     enabled: settlements.length > 0,
     queryFn: async ({ signal }) => {
       // Whose fills to look for: the signed-in account, which is the account these orders

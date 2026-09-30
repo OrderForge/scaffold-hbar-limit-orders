@@ -135,34 +135,61 @@ export const decodeFills = (logs: RawLog[], reactorAddress: string): Fill[] => {
 };
 
 /**
- * Was this fill at least as good as the signed limit?
+ * The output a fill earned before fees, in the output token's smallest units.
+ *
+ * The two sides pay fees differently, which the reactor's source makes explicit:
+ *
+ * - A **taker** pays on top: its fee is pulled in the input token beside the principal,
+ *   so `outputAmount` is already the whole output.
+ * - A **maker** pays out of its proceeds: the reactor sends `output − makerFee + rebate`,
+ *   and `MakerFill.outputAmount` is that net figure. The gross is recovered by adding the
+ *   fee back and taking the rebate off.
+ *
+ * Checking a maker's net output against its limit fails every maker fill that paid a fee,
+ * which is exactly what the first live maker fill here showed.
+ */
+export const grossOutput = (fill: Fill): bigint =>
+  fill.kind === "maker" ? fill.outputAmount + fill.fee - fill.rebate : fill.outputAmount;
+
+/**
+ * Did the fill honour the signed price?
  *
  * The order says "for all of `inputAmount` I accept no less than `outputAmount`", so a
- * partial fill must respect the same ratio:
+ * partial fill must keep the same ratio or better:
  *
- *     outputAmount_fill / filled  >=  outputAmount_signed / inputAmount_signed
+ *     grossOutput_fill / filled  >=  outputAmount_signed / inputAmount_signed
  *
- * Cross-multiplied to stay in integers. A maker's `outputAmount` is already net of fee and
- * rebate, which is why the fee is not subtracted again here.
+ * Cross-multiplied to stay in integers, and measured before fees: the fee has its own cap.
  */
 export const priceAtLeastAsGood = (fill: Fill, order: SignedOrderReference): boolean =>
-  fill.outputAmount * order.inputAmount >= order.outputAmount * fill.filled;
+  grossOutput(fill) * order.inputAmount >= order.outputAmount * fill.filled;
+
+/**
+ * What a fee is a fraction of. A taker's fee is in the input token, so it is measured
+ * against the input filled; a maker's is taken from the output, so it is measured against
+ * the gross output. Dividing a maker's fee — in output units — by its input, in another
+ * token's units, produced a nonsense rate of 46,641 pips on a fee that was exactly at the
+ * 2,000-pip cap.
+ */
+const feeBasis = (fill: Fill): bigint => (fill.kind === "maker" ? grossOutput(fill) : fill.filled);
 
 /**
  * Effective fee in pips, for display. Integer division truncates, so this is a rounded
  * figure — never compare it against the cap directly (see `feeWithinCap`).
  */
-export const effectiveFeePips = (fill: Fill): bigint =>
-  fill.filled === 0n ? 0n : (fill.fee * PIP_DENOMINATOR) / fill.filled;
+export const effectiveFeePips = (fill: Fill): bigint => {
+  const basis = feeBasis(fill);
+  return basis === 0n ? 0n : (fill.fee * PIP_DENOMINATOR) / basis;
+};
 
 /**
  * Is the fee within the signed cap?
  *
- * Compared without dividing: `fee / filled <= cap / 1e6` becomes `fee * 1e6 <= cap * filled`.
+ * Compared without dividing: `fee / basis <= cap / 1e6` becomes `fee * 1e6 <= cap * basis`.
  * Rounding the rate to whole pips first would let a fee fractionally above the cap pass.
  */
 export const feeWithinCap = (fill: Fill, capPips: number | bigint): boolean =>
-  fill.fee * PIP_DENOMINATOR <= BigInt(capPips) * fill.filled;
+  fill.fee * PIP_DENOMINATOR <= BigInt(capPips) * feeBasis(fill);
 
 export type VerifyContext = {
   order: SignedOrderReference;

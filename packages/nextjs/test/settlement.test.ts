@@ -1,6 +1,16 @@
 import settlement from "./fixtures/settlement-3504309.json";
+
+/**
+ * A real maker fill: testnet order 3505943, a BUY of 10 SAUCE at 0.04288. The ask it was
+ * priced against moved before it arrived, so it rested and was filled as a maker. A maker
+ * pays its fee out of its proceeds, in the output token — which the first version of these
+ * checks did not account for: it failed this fill on price, and reported the fee as 46,641
+ * pips when it was exactly the 2,000-pip cap.
+ */
+import makerSettlement from "./fixtures/settlement-3505943.json";
 import { describe, expect, it } from "vitest";
 import { decodeFills, fillsForOrder, verifyFill, verifyFills } from "~~/lib/verify/fills";
+import { effectiveFeePips, grossOutput } from "~~/lib/verify/fills";
 
 /**
  * A real settlement: testnet order 3504309, a BUY of 10 SAUCE at 0.0435 USDC on book 3,
@@ -68,5 +78,62 @@ describe("a batched settlement", () => {
   it("would have failed against the other side's fill — which is why filtering matters", () => {
     const theirs = fills.find(fill => fill.swapper.toLowerCase() !== US.toLowerCase())!;
     expect(verifyFill({ order: signed, filledAt }, theirs).ok).toBe(false);
+  });
+});
+
+describe("a real maker fill", () => {
+  const makerFills = decodeFills(makerSettlement.logs, REACTOR);
+  const [mine] = fillsForOrder(makerFills, { swapper: US, nonce: 4 });
+  const signedMaker = { ...signed, inputAmount: 428_800n, outputAmount: 10_000_000n, deadline: 1_790_787_000n };
+  const makerAt = new Date(Math.floor(Number(makerSettlement.timestamp.split(".")[0])) * 1000);
+
+  it("is this order's, and only this order's", () => {
+    expect(makerFills).toHaveLength(3);
+    expect(mine).toMatchObject({ kind: "maker", filled: 428_800n, outputAmount: 9_980_000n, fee: 20_000n, rebate: 0n });
+  });
+
+  it("earned 10 SAUCE before its fee, exactly the limit", () => {
+    expect(grossOutput(mine)).toBe(10_000_000n);
+  });
+
+  it("paid a fee of exactly 2,000 pips of its output — at the cap, not over it", () => {
+    expect(effectiveFeePips(mine)).toBe(2000n);
+  });
+
+  it("passes every check", () => {
+    const verification = verifyFill({ order: signedMaker, filledAt: makerAt }, mine);
+    expect(verification.checks.filter(check => !check.ok)).toEqual([]);
+  });
+});
+
+describe("maker fee and price boundaries", () => {
+  const maker = (outputAmount: bigint, fee: bigint, rebate = 0n) => ({
+    kind: "maker" as const,
+    orderHash: "0x",
+    swapper: US,
+    filler: US,
+    nonce: 1n,
+    filled: 1_000_000n,
+    outputAmount,
+    fee,
+    rebate,
+  });
+  const order = { ...signed, inputAmount: 1_000_000n, outputAmount: 10_000_000n };
+
+  it("a fee one unit over the cap fails, even though it rounds to the cap", () => {
+    // Gross 10,000,000; cap 2,000 pips allows a fee of 20,000.
+    expect(verifyFill({ order }, maker(9_979_999n, 20_001n)).checks.find(c => c.id === "feeCap")?.ok).toBe(false);
+    expect(verifyFill({ order }, maker(9_980_000n, 20_000n)).checks.find(c => c.id === "feeCap")?.ok).toBe(true);
+  });
+
+  it("a gross output one unit short of the limit fails on price", () => {
+    expect(verifyFill({ order }, maker(9_979_999n, 20_000n)).checks.find(c => c.id === "price")?.ok).toBe(false);
+  });
+
+  it("counts a rebate as income, not as part of the price", () => {
+    // Net = gross − fee + rebate, so a rebate must be taken off before comparing to the limit.
+    const withRebate = maker(9_990_000n, 20_000n, 10_000n);
+    expect(grossOutput(withRebate)).toBe(10_000_000n);
+    expect(verifyFill({ order }, withRebate).ok).toBe(true);
   });
 });
