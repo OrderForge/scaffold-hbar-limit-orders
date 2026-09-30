@@ -82,6 +82,19 @@ where the SaucerSwap reactor and Permit2 go).
 - **DaisyUI** classes for layout (`btn`, `card`, …); themes are defined in `packages/nextjs/styles/globals.css`
 - Imports use the `~~/` alias → `packages/nextjs/*`
 
+## Optional features
+
+- Switches live in `packages/nextjs/features.config.ts`; `yarn clob:feature list | on | off | remove <name>`
+  flips or deletes them. Today there is one: `depth-chart`.
+- A new optional feature must be removable without leaving dead code. Register it in `FEATURES` in
+  `scripts/feature.mjs` (its key and files), and wrap every place it is mounted in markers:
+  `{/* feature:<name> */}` … `{/* /feature:<name> */}` in JSX, `// feature:<name>` … `// /feature:<name>`
+  in TypeScript, or a trailing `// feature:<name>` on a single line such as an import.
+- Check it the way the depth chart was checked: `remove --yes` on a copy, then `next:check-types`,
+  `lint`, `test:clob` and `next:build` must all pass.
+- Charts are for drawing only: they may convert to floating point, and nothing they compute may feed a
+  price, size or notional back into an order.
+
 ## Networks
 
 - Hardhat: `packages/hardhat/hardhat.config.ts` (`hederaTestnet`, `hederaMainnet`, local)
@@ -96,5 +109,5 @@ where the SaucerSwap reactor and Permit2 go).
 
 The SaucerSwap Orderbook API is only partly documented, and several documented shapes are wrong. The
 verified request and response shapes, the EIP-712 order struct (read from the reactor's verified source),
-the onboarding steps and every known discrepancy are recorded in the internal kit and, once written, in
-`docs/integration.md` and `docs/DISCREPANCIES.md`. Do not build against a guessed shape.
+the onboarding steps and every known discrepancy are recorded in `docs/integration.md` and
+`docs/DISCREPANCIES.md`. Do not build against a guessed shape.

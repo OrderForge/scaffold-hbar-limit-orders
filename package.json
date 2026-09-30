@@ -39,6 +39,7 @@
     "lint-staged": "lint-staged",
     "lint:wording": "node scripts/lint-wording.mjs",
     "smoke": "node scripts/smoke.mjs",
+    "clob:feature": "node scripts/feature.mjs",
     "next:build": "yarn workspace @sh/nextjs build",
     "next:check-types": "yarn workspace @sh/nextjs check-types",
     "next:dev": "yarn workspace @sh/nextjs dev",

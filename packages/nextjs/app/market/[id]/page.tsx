@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AccountPanel } from "~~/components/clob/AccountPanel";
+import { DepthChart } from "~~/components/clob/DepthChart";
+// feature:depth-chart
 import { DepthLadder, SpreadReadout } from "~~/components/clob/DepthLadder";
 import { DryRunSign } from "~~/components/clob/DryRunSign";
 import { AmmBadge, LiveIndicator, MarketStateBadge } from "~~/components/clob/MarketBadges";
@@ -10,6 +12,7 @@ import { NetworkToggle, SwitchToMainnetHint } from "~~/components/clob/NetworkTo
 import { OnboardingChecklist } from "~~/components/clob/OnboardingChecklist";
 import { OrderEntry } from "~~/components/clob/OrderEntry";
 import { TradeTape } from "~~/components/clob/TradeTape";
+import features from "~~/features.config";
 import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
 import { useChangedLevels, useSecondsSince } from "~~/hooks/clob/useFreshness";
 import { useLiveDepth } from "~~/hooks/clob/useLiveDepth";
@@ -260,6 +263,12 @@ const MarketPage = () => {
               <h2 className="text-sm font-semibold uppercase tracking-wide opacity-70">Order book</h2>
               {depth && <SpreadReadout depth={depth} market={book} />}
             </div>
+
+            {/* feature:depth-chart */}
+            {features.depthChart && depth && !depth.isEmpty && (
+              <DepthChart depth={depth} market={book} className="mb-3" />
+            )}
+            {/* /feature:depth-chart */}
 
             {depth ? (
               <DepthLadder depth={depth} market={book} changes={changes} />

@@ -48,8 +48,8 @@ data. Reading mainnet prices moves no funds; wallet actions stay on your wallet'
 
 ![A market page: depth ladder with cumulative bars, spread readout, trade tape and the market's rules](docs/images/market.png)
 
-<p align="center"><em>HBAR/USDC on mainnet: 103 levels of real depth, the spread, and a trade tape linked
-to settlement transactions.</em></p>
+<p align="center"><em>HBAR/USDC on mainnet: the depth chart over 100+ levels of real depth, the spread, and a
+trade tape linked to settlement transactions.</em></p>
 
 > **Why requests go through this app's own `/api/clob` route:** the Orderbook API sends no CORS headers,
 > so a browser cannot call it directly however public the endpoint is — it is built for server-side
@@ -64,7 +64,8 @@ HTTP API and **no published client library**. This template is that client, plus
 - **Market data** — books, depth, the trade tape and quotes, with each market's trading rules (tick, size
   step, lot, minimum notional) applied correctly.
 - **Live depth** — the WebSocket with snapshot-and-diff reconciliation, re-syncing on any gap, falling
-  back to polling when it cannot connect.
+  back to polling when it cannot connect. An optional **depth chart** draws the same book as cumulative
+  bid and ask curves.
 - **Onboarding** — before it can trade, a Hedera account must associate the tokens (HTS), approve them
   to Permit2, and approve the reactor inside Permit2. The template detects each step, does it in one
   click, and re-checks the result against the chain rather than trusting the receipt.
@@ -234,6 +235,7 @@ See [docs/hedera.md](docs/hedera.md#the-trust-boundary) for what each guarantee 
 | HCS journal | `packages/nextjs/lib/journal/` + `app/api/journal` (the only place holding a Hedera key) |
 | Order build/sign/cancel | `packages/nextjs/lib/clob/orders.ts` |
 | Live depth stream | `packages/nextjs/lib/clob/depthStream.ts` — buffer, snapshot, reconcile, re-sync on a gap |
+| Depth chart (optional) | `packages/nextjs/components/clob/DepthChart.tsx` + `lib/clob/depthChart.ts`; switched in `features.config.ts` |
 | Fill verification | `packages/nextjs/lib/verify/fills.ts` |
 | EIP-712 digest parity | `packages/hardhat/contracts/OrderDigest.sol` — the order type written a second time, in Solidity, so a transcription error fails a test |
 | Scripts | `packages/hardhat/scripts/` — `clob:bootstrap`, `clob:fund`, `clob:status`, `clob:doctor` |
@@ -286,6 +288,32 @@ been open (book 3, SAUCE/USDC) and it has been halted since 2026-09-20, which is
 why the mainnet-read mode exists and why the app renders halted and empty books as
 first-class states rather than errors.
 
+### Optional features
+
+Some parts of the terminal are optional, and each one can be switched off or deleted with a
+command rather than by hunting through the code:
+
+```bash
+yarn clob:feature list                 # what exists, and whether it is on
+yarn clob:feature off depth-chart      # hide it — a running dev server updates without a reload
+yarn clob:feature on depth-chart
+yarn clob:feature remove depth-chart   # delete its files and every reference to them
+```
+
+The switches live in `packages/nextjs/features.config.ts`, next to `scaffold.config.ts`. `remove`
+previews what it will delete and asks for `--yes`; afterwards the app still type-checks, lints and
+builds, with no dead code left behind. It finds the feature's code by marker comments
+(`{/* feature:depth-chart */}` … `{/* /feature:depth-chart */}`), so a new optional feature joins by
+adding an entry to `scripts/feature.mjs` and marking its code the same way.
+
+| Feature | What it is |
+| --- | --- |
+| `depth-chart` | Cumulative bid/ask curve above the ladder, drawn from the live depth. Plain SVG, no chart library. |
+
+There is no price chart, on purpose: the Orderbook API has no candle or price-history endpoint, and
+trades are capped at the latest 100 — about 16 hours on the busiest mainnet market. A chart that
+implied more history than that would be misleading.
+
 <details>
 <summary><strong>Environment variables</strong></summary>
 
@@ -327,6 +355,7 @@ yarn clob:fund --hbar 20        # swap HBAR into a market's tokens
 yarn clob:doctor                # check the live API still matches what this was built against
 yarn clob:demo                  # record a walkthrough of the running app
 yarn clob:shots                 # re-capture the README screenshots
+yarn clob:feature list          # optional features: list / on / off / remove
 yarn smoke                      # browser smoke test against a running build
 yarn hedera-harness validate    # the full harness: commands, static checks, browser
 yarn lint:wording               # fail the build if the docs claim more than the design backs
@@ -394,7 +423,7 @@ packages/nextjs/
   lib/hedera/    the six onboarding steps, derived from chain reads
   lib/journal/   HCS order-intent records
   lib/verify/    fill verification against the signed order
-  test/          150 unit tests, offline against fixtures captured from the live API
+  test/          168 unit tests, offline against fixtures captured from the live API
 docs/            microstructure, integration, hedera, discrepancies
 .harness/        harness spec, increment PRDs, validators
 ```
