@@ -99,7 +99,7 @@ export const decodeFills = (logs: RawLog[], reactorAddress: string): Fill[] => {
       });
 
       if (decoded.eventName === "TakerFill") {
-        const args = decoded.args as any;
+        const args = decoded.args;
         fills.push({
           kind: "taker",
           orderHash: args.orderHash,
@@ -112,7 +112,7 @@ export const decodeFills = (logs: RawLog[], reactorAddress: string): Fill[] => {
           rebate: 0n,
         });
       } else if (decoded.eventName === "MakerFill") {
-        const args = decoded.args as any;
+        const args = decoded.args;
         fills.push({
           kind: "maker",
           orderHash: args.orderHash,
@@ -145,8 +145,8 @@ export const decodeFills = (logs: RawLog[], reactorAddress: string): Fill[] => {
  *   and `MakerFill.outputAmount` is that net figure. The gross is recovered by adding the
  *   fee back and taking the rebate off.
  *
- * Checking a maker's net output against its limit fails every maker fill that paid a fee,
- * which is exactly what the first live maker fill here showed.
+ * Checking a maker's net output against its limit would fail every maker fill that paid
+ * a fee.
  */
 export const grossOutput = (fill: Fill): bigint =>
   fill.kind === "maker" ? fill.outputAmount + fill.fee - fill.rebate : fill.outputAmount;
@@ -167,9 +167,7 @@ export const priceAtLeastAsGood = (fill: Fill, order: SignedOrderReference): boo
 /**
  * What a fee is a fraction of. A taker's fee is in the input token, so it is measured
  * against the input filled; a maker's is taken from the output, so it is measured against
- * the gross output. Dividing a maker's fee — in output units — by its input, in another
- * token's units, produced a nonsense rate of 46,641 pips on a fee that was exactly at the
- * 2,000-pip cap.
+ * the gross output. Dividing a maker's fee by its input would mix two tokens' units.
  */
 const feeBasis = (fill: Fill): bigint => (fill.kind === "maker" ? grossOutput(fill) : fill.filled);
 
@@ -278,8 +276,9 @@ export const verifyFill = (
  *
  * A settlement transaction is not one order's receipt. The filler batches matches, so a
  * single transaction carries the fills of every party it settled: the order you placed,
- * the makers it matched against, and unrelated matches settled alongside. The first live
- * testnet fill held four fills from three accounts, and only one was ours.
+ * the makers it matched against, and unrelated matches settled alongside. The testnet
+ * settlement in `test/fixtures/settlement-3504309.json` holds four fills from three
+ * accounts, and one of them belongs to the order being checked.
  *
  * Checking all of them against your order reports someone else's fee as yours and adds
  * their size to your total. So fills are matched on the two things that identify an

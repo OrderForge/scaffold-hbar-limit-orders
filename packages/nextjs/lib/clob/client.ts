@@ -6,8 +6,8 @@
  * and reuses `request()` from `http.ts`.
  */
 import { ClobNetwork, ClobNetworkConfig, getApiBase, getNetworkConfig } from "./config";
-import { ClobParseError, MarketNotFoundError } from "./errors";
-import { request, withQuery } from "./http";
+import { MarketNotFoundError } from "./errors";
+import { parseResponse as parse, request, withQuery } from "./http";
 import {
   AccountOrder,
   DepthSnapshot,
@@ -30,7 +30,6 @@ import {
   signatureDomainSchema,
   tradesResponseSchema,
 } from "./types";
-import { z } from "zod";
 
 /** Books change slowly; depth is polled hard. Both are served from a short server cache. */
 const CACHE_MS = {
@@ -40,18 +39,6 @@ const CACHE_MS = {
   quote: 1_000,
   domain: 300_000,
 } as const;
-
-const parse = <S extends z.ZodTypeAny>(schema: S, payload: unknown, url: string): z.infer<S> => {
-  const result = schema.safeParse(payload);
-  if (!result.success) {
-    throw new ClobParseError(
-      `Unexpected response shape: ${result.error.issues[0]?.message ?? "invalid"}`,
-      url,
-      payload,
-    );
-  }
-  return result.data;
-};
 
 export type ClobClientOptions = {
   network?: ClobNetwork;
@@ -185,8 +172,5 @@ export class ClobClient {
     return parse(signatureDomainSchema, payload, url);
   }
 }
-
-/** Convenience client for the app's default network. */
-export const clobClient = (network?: ClobNetwork) => new ClobClient({ network });
 
 export { MarketNotFoundError };

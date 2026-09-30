@@ -178,9 +178,6 @@ export const marketState = (book: Pick<Orderbook, "status" | "isMarketHalted">):
   return book.isMarketHalted === 1 ? "HALTED" : "OPEN";
 };
 
-export const isTradeable = (book: Pick<Orderbook, "status" | "isMarketHalted">): boolean =>
-  marketState(book) === "OPEN";
-
 /** Display label for a market. Never use this as an identity — key on `id`. */
 export const marketLabel = (book: Pick<Orderbook, "baseTokenSymbol" | "quoteTokenSymbol">): string =>
   `${book.baseTokenSymbol ?? "?"}/${book.quoteTokenSymbol ?? "?"}`;

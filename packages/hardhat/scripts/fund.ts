@@ -62,7 +62,9 @@ const main = async () => {
   const hbarPerSide = BigInt(arg("hbar", "50"));
 
   const books = await (await fetch(`${CONFIG.api}/books`)).json();
-  const market = books.orderbooks.find((book: any) => String(book.id) === bookId);
+  const market = books.orderbooks.find(
+    (book: { id: string | number; status: string; isMarketHalted: number }) => String(book.id) === bookId,
+  );
   if (!market) {
     console.error(`No market ${bookId} on ${NETWORK}.`);
     process.exit(1);

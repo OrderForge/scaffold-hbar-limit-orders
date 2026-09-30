@@ -62,8 +62,6 @@ export type JournalEntry = {
   consensusTimestamp: string;
   sequenceNumber: number;
   topicId: string;
-  /** The submit transaction, for a HashScan link. */
-  transactionId?: string;
 };
 
 export type BuildIntentInput = {

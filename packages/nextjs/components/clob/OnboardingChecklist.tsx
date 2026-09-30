@@ -8,43 +8,11 @@ import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
 import { useOnboarding } from "~~/hooks/clob/useOnboarding";
 import { parseDecimal } from "~~/lib/clob/format";
 import { Orderbook } from "~~/lib/clob/types";
+import { ERC20_ABI, IHRC_ABI, PERMIT2_ABI } from "~~/lib/hedera/abis";
 import { hbarApproveCall } from "~~/lib/hedera/hbar";
 import { OnboardingStep, stepExplanation, stepLabel } from "~~/lib/hedera/onboarding";
 import { hashscan } from "~~/lib/mirror/client";
 import { GAS_LIMITS } from "~~/utils/hedera/constants";
-
-/** HIP-719: every HTS token exposes `associate()` at its own EVM address. */
-const IHRC_ABI = [
-  { type: "function", name: "associate", stateMutability: "nonpayable", inputs: [], outputs: [{ type: "int64" }] },
-] as const;
-
-const ERC20_APPROVE_ABI = [
-  {
-    type: "function",
-    name: "approve",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "spender", type: "address" },
-      { name: "amount", type: "uint256" },
-    ],
-    outputs: [{ type: "bool" }],
-  },
-] as const;
-
-const PERMIT2_APPROVE_ABI = [
-  {
-    type: "function",
-    name: "approve",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "token", type: "address" },
-      { name: "spender", type: "address" },
-      { name: "amount", type: "uint160" },
-      { name: "expiration", type: "uint48" },
-    ],
-    outputs: [],
-  },
-] as const;
 
 /** Default approval window. Bounded and expiring, never unlimited. */
 const APPROVAL_DAYS = 30;
@@ -94,7 +62,7 @@ const StepRow = ({
       } else if (step.kind === "approvePermit2") {
         txHash = await writeContractAsync({
           address: step.tokenEvmAddress,
-          abi: ERC20_APPROVE_ABI,
+          abi: ERC20_ABI,
           functionName: "approve",
           args: [config.permit2, parseDecimal(approvalAmount, decimals)],
           chainId: config.chainId,
@@ -104,7 +72,7 @@ const StepRow = ({
         const expiration = Math.floor(Date.now() / 1000) + APPROVAL_DAYS * 86_400;
         txHash = await writeContractAsync({
           address: config.permit2,
-          abi: PERMIT2_APPROVE_ABI,
+          abi: PERMIT2_ABI,
           functionName: "approve",
           args: [step.tokenEvmAddress, config.reactor, parseDecimal(approvalAmount, decimals), expiration],
           chainId: config.chainId,

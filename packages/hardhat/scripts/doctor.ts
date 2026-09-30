@@ -66,9 +66,14 @@ const check = (name: string, ok: boolean, detail: string, kind: "contract" | "co
   if (!ok || process.env.VERBOSE) console.log(`      ${detail}`);
 };
 
+/** The fields the doctor reads from a market, once it has checked they are there. */
+type RawMarket = { id: string | number; status: string; isMarketHalted: number; minNotional: unknown };
+
 const json = async (path: string, init?: RequestInit) => {
   const response = await fetch(`${CONFIG.api}${path}`, init);
   const text = await response.text();
+  // Untyped on purpose: the doctor's job is to inspect the raw payload and report when its
+  // shape has changed, so nothing is assumed about it until a check has looked.
   let body: any;
   try {
     body = JSON.parse(text);
@@ -107,7 +112,7 @@ const publicChecks = async () => {
     "minNotional is in smallest units",
     // 15000000 against a 6dp quote token is 15 USDC. If this ever looks like a plain
     // decimal (e.g. "15"), the validation in lib/clob/format.ts must change with it.
-    markets.every((m: any) => /^\d+$/.test(String(m.minNotional))),
+    markets.every((m: RawMarket) => /^\d+$/.test(String(m.minNotional))),
     `sample: minNotional ${first?.minNotional}, quote decimals ${first?.quoteTokenDecimals}`,
   );
 
@@ -117,8 +122,8 @@ const publicChecks = async () => {
     `takerFeePips ${first?.takerFeePips} = ${(first?.takerFeePips ?? 0) / 10000}%`,
   );
 
-  const open = markets.find((m: any) => m.status === "OPEN" && m.isMarketHalted !== 1);
-  const halted = markets.filter((m: any) => m.isMarketHalted === 1);
+  const open = markets.find((m: RawMarket) => m.status === "OPEN" && m.isMarketHalted !== 1);
+  const halted = markets.filter((m: RawMarket) => m.isMarketHalted === 1);
   check(
     "at least one tradeable market",
     Boolean(open),
@@ -128,7 +133,7 @@ const publicChecks = async () => {
     "condition",
   );
 
-  const target = open ?? markets.find((m: any) => m.status === "OPEN") ?? first;
+  const target = open ?? markets.find((m: RawMarket) => m.status === "OPEN") ?? first;
 
   const depth = await json(`/depth/${target.id}`);
   check("GET /depth returns a snapshot", depth.status === 200, `status ${depth.status}`);
@@ -140,12 +145,12 @@ const publicChecks = async () => {
     );
     check(
       "depth levels are [price, size] strings",
-      [...depth.body.bids, ...depth.body.asks].every((l: any) => Array.isArray(l) && typeof l[0] === "string"),
+      [...depth.body.bids, ...depth.body.asks].every((l: unknown) => Array.isArray(l) && typeof l[0] === "string"),
       "levels keep full precision as strings",
     );
   }
 
-  const closed = markets.find((m: any) => m.status !== "OPEN");
+  const closed = markets.find((m: RawMarket) => m.status !== "OPEN");
   if (closed) {
     const closedDepth = await json(`/depth/${closed.id}`);
     check(
@@ -310,7 +315,7 @@ const placeCheck = async (marketId: string, auth: Record<string, string>) => {
   console.log("\nLive order round trip");
 
   const books = await json("/books");
-  const market = books.body.orderbooks.find((m: any) => String(m.id) === String(marketId));
+  const market = books.body.orderbooks.find((m: RawMarket) => String(m.id) === String(marketId));
   if (!market) return check("market resolvable", false, `no market ${marketId}`);
 
   if (market.isMarketHalted === 1) {
@@ -429,7 +434,7 @@ const placeCheck = async (marketId: string, auth: Record<string, string>) => {
   for (let attempt = 0; attempt < 8 && !confirmed; attempt++) {
     await new Promise(resolve => setTimeout(resolve, 2000));
     const history = await json(`/orders/${orderId}/history`, { headers: auth });
-    confirmed = (history.body.events ?? []).some((e: any) => e.type.replace(/^ORDER_/, "") === "CANCELED");
+    confirmed = (history.body.events ?? []).some((e: { type: string }) => e.type.replace(/^ORDER_/, "") === "CANCELED");
   }
   check(
     "cancel confirmed in order history",

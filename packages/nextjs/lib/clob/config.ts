@@ -94,9 +94,6 @@ export const getNetworkConfig = (network: ClobNetwork = getDefaultNetwork()): Cl
 export const getJournalNetwork = (): ClobNetwork =>
   process.env.NEXT_PUBLIC_JOURNAL_NETWORK === "mainnet" ? "mainnet" : "testnet";
 
-/** Market shown when no id is given. */
-export const getDefaultOrderbookId = (): string => process.env.NEXT_PUBLIC_DEFAULT_ORDERBOOK_ID || "3";
-
 /**
  * Same-origin path the browser calls instead of the API directly.
  *

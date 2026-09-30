@@ -18,7 +18,7 @@
  * The token travels in the query string, so the URL is as sensitive as the token itself.
  * It is never logged, and never put in an error message.
  */
-import { ClobNetworkConfig } from "./config";
+import { ClobNetworkConfig, getWsUrl } from "./config";
 import { LiveBook, applyDiff, bookFromSnapshot, bookToSnapshot } from "./depth";
 import { DepthDiff, DepthSnapshot, depthDiffSchema } from "./types";
 
@@ -100,10 +100,8 @@ export class DepthStream {
   }
 
   private url(): string {
-    const base = this.options.config.apiUrl.replace(/^http/, "ws");
-    return `${base}/ws/depth?token=${encodeURIComponent(this.options.token)}&books=${encodeURIComponent(
-      this.options.orderbookId,
-    )}`;
+    const query = `token=${encodeURIComponent(this.options.token)}&books=${encodeURIComponent(this.options.orderbookId)}`;
+    return `${getWsUrl(this.options.config, "/ws/depth")}?${query}`;
   }
 
   private connect() {
@@ -181,8 +179,7 @@ export class DepthStream {
     if (outcome.status === "gap") {
       // No replay exists, so the only correct move is to start again from a snapshot.
       // The gapped diff is discarded rather than re-buffered: the fresh snapshot
-      // supersedes it, and re-applying it would gap again — which is an infinite loop,
-      // as an early version of this file demonstrated.
+      // supersedes it, and re-applying it would gap again, forever.
       this.book = null;
       this.buffer = [];
       this.emit({ status: "resyncing", resyncs: this.state.resyncs + 1 });

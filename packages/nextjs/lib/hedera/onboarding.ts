@@ -16,7 +16,9 @@
 import { ClobNetworkConfig } from "../clob/config";
 import { Orderbook } from "../clob/types";
 import { MirrorClient } from "../mirror/client";
+import { ERC20_ABI, PERMIT2_ABI } from "./abis";
 import { isNativeHbar } from "./hbar";
+import type { PublicClient } from "viem";
 
 export type OnboardingStepId =
   | "associateBaseToken"
@@ -62,37 +64,6 @@ export type OnboardingState = {
   next: OnboardingStep | null;
 };
 
-const ERC20_ALLOWANCE_ABI = [
-  {
-    type: "function",
-    name: "allowance",
-    stateMutability: "view",
-    inputs: [
-      { name: "owner", type: "address" },
-      { name: "spender", type: "address" },
-    ],
-    outputs: [{ name: "", type: "uint256" }],
-  },
-] as const;
-
-const PERMIT2_ALLOWANCE_ABI = [
-  {
-    type: "function",
-    name: "allowance",
-    stateMutability: "view",
-    inputs: [
-      { name: "user", type: "address" },
-      { name: "token", type: "address" },
-      { name: "spender", type: "address" },
-    ],
-    outputs: [
-      { name: "amount", type: "uint160" },
-      { name: "expiration", type: "uint48" },
-      { name: "nonce", type: "uint48" },
-    ],
-  },
-] as const;
-
 /** Minimal shape of the reads this module needs, so it can be tested without a chain. */
 export type ChainReader = {
   readErc20Allowance: (token: `0x${string}`, owner: `0x${string}`, spender: `0x${string}`) => Promise<bigint>;
@@ -110,24 +81,24 @@ export type ChainReader = {
 };
 
 export const viemChainReader = (
-  client: { readContract: (args: any) => Promise<any> },
+  client: Pick<PublicClient, "readContract">,
   mirror: Pick<MirrorClient, "getHbarAllowance">,
 ): ChainReader => ({
   readHbarAllowance: (owner, spenderId) => mirror.getHbarAllowance(owner, spenderId),
   readErc20Allowance: (token, owner, spender) =>
     client.readContract({
       address: token,
-      abi: ERC20_ALLOWANCE_ABI,
+      abi: ERC20_ABI,
       functionName: "allowance",
       args: [owner, spender],
     }),
   readPermit2Allowance: async (permit2, owner, token, spender) => {
-    const [amount, expiration] = (await client.readContract({
+    const [amount, expiration] = await client.readContract({
       address: permit2,
-      abi: PERMIT2_ALLOWANCE_ABI,
+      abi: PERMIT2_ABI,
       functionName: "allowance",
       args: [owner, token, spender],
-    })) as [bigint, number, number];
+    });
     return { amount, expiration: Number(expiration) };
   },
 });

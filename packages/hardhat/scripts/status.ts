@@ -45,8 +45,13 @@ const checkMarketData = async () => {
       return;
     }
     const body = await response.json();
-    const open = body.orderbooks.filter((book: any) => book.status === "OPEN" && book.isMarketHalted !== 1);
-    const halted = body.orderbooks.filter((book: any) => book.isMarketHalted === 1);
+    const open = body.orderbooks.filter(
+      (book: { id: string | number; status: string; isMarketHalted: number }) =>
+        book.status === "OPEN" && book.isMarketHalted !== 1,
+    );
+    const halted = body.orderbooks.filter(
+      (book: { id: string | number; status: string; isMarketHalted: number }) => book.isMarketHalted === 1,
+    );
     ok(`${body.orderbooks.length} markets, ${open.length} open, ${halted.length} halted`);
     if (open.length === 0) {
       info("no tradeable market here right now — the terminal can read the other network instead");

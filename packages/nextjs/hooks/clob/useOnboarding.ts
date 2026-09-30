@@ -11,7 +11,8 @@ import { OnboardingState, deriveOnboarding, readAssociation, viemChainReader } f
  * The account's readiness to trade a market, derived from the chain.
  *
  * Deliberately independent of `GET /onboarding/:id/status`: the venue's view is a claim,
- * the mirror node and the contracts are the record. Increment 3 shows both side by side.
+ * the mirror node and the contracts are the record. The account panel shows both, so a
+ * disagreement between them is visible.
  */
 export const useOnboarding = (market: Orderbook | null | undefined) => {
   const { address } = useAccount();
@@ -43,7 +44,7 @@ export const useOnboarding = (market: Orderbook | null | undefined) => {
 /**
  * Resolve the connected account's Hedera id on demand.
  *
- * `useHederaAccount` is a query and may not have settled when the user signs. A journal
+ * A query for the account id may not have settled when the user signs. A journal
  * record whose `account` field holds an EVM address is still correct but reads badly, so
  * the write path awaits this instead of taking whatever the query happens to hold.
  */
@@ -59,17 +60,4 @@ export const useResolveHederaAccountId = () => {
       return null;
     }
   }, [mirror, address]);
-};
-
-/** The connected account's Hedera id (`0.0.x`), resolved from its EVM address. */
-export const useHederaAccount = () => {
-  const { address } = useAccount();
-  const { mirror, network } = useClobNetwork();
-
-  return useQuery({
-    queryKey: ["mirror", network, "account", address],
-    enabled: Boolean(address),
-    queryFn: async ({ signal }) => (address ? mirror.getAccount(address, signal) : null),
-    staleTime: 30_000,
-  });
 };

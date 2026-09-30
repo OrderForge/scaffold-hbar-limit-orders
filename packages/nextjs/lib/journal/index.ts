@@ -6,8 +6,9 @@
  * which is public: anyone can audit the journal without this app.
  */
 import { ClobNetworkConfig } from "../clob/config";
-import { request, withQuery } from "../clob/http";
+import { parseResponse, request, withQuery } from "../clob/http";
 import { JournalEntry, OrderIntent, decodeIntent } from "./types";
+import { z } from "zod";
 
 export * from "./types";
 
@@ -41,6 +42,13 @@ const decodeBase64 = (value: string): string => {
  * Paged, newest first. `account` filters client-side: the topic is a shared, public log,
  * and filtering server-side would mean trusting someone else's filter.
  */
+/** The mirror node's topic messages, reduced to the fields read here. */
+const topicMessagesSchema = z.object({
+  messages: z
+    .array(z.object({ message: z.string(), consensus_timestamp: z.string(), sequence_number: z.number() }))
+    .default([]),
+});
+
 export const listIntents = async (
   config: ClobNetworkConfig,
   options: { topicId?: string | null; limit?: number; account?: string; signal?: AbortSignal } = {},
@@ -53,7 +61,11 @@ export const listIntents = async (
     order: "desc",
   });
 
-  const payload = await request<any>(url, { cacheMs: 3_000, signal: options.signal });
+  const payload = parseResponse(
+    topicMessagesSchema,
+    await request<unknown>(url, { cacheMs: 3_000, signal: options.signal }),
+    url,
+  );
 
   const entries: JournalEntry[] = [];
   for (const message of payload.messages ?? []) {
@@ -69,7 +81,6 @@ export const listIntents = async (
       consensusTimestamp: message.consensus_timestamp,
       sequenceNumber: message.sequence_number,
       topicId,
-      transactionId: message.payer_account_id ? message.payer_account_id : undefined,
     });
   }
 

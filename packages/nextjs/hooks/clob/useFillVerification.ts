@@ -7,7 +7,14 @@ import { getJournalNetwork, getNetworkConfig } from "~~/lib/clob/config";
 import { orderAmounts } from "~~/lib/clob/orders";
 import { AccountOrder, OrderEvent, Orderbook } from "~~/lib/clob/types";
 import { JournalEntry, listIntents } from "~~/lib/journal";
-import { FillVerification, SignedOrderReference, decodeFills, fillsForOrder, verifyFills } from "~~/lib/verify/fills";
+import {
+  Fill,
+  FillVerification,
+  SignedOrderReference,
+  decodeFills,
+  fillsForOrder,
+  verifyFills,
+} from "~~/lib/verify/fills";
 
 /**
  * Rebuild what the user signed.
@@ -97,7 +104,7 @@ export const useFillVerification = (order: AccountOrder | undefined, market: Ord
       const built = referenceFrom(order, market, journal, swapper);
       if (!built || !swapper) return [];
 
-      const fills: { fill: any; filledAt?: Date }[] = [];
+      const fills: { fill: Fill; filledAt?: Date }[] = [];
       for (const event of settlements) {
         const result = await mirror.getContractResult(event.txHash as string, signal);
         if (!result) continue;
@@ -108,7 +115,10 @@ export const useFillVerification = (order: AccountOrder | undefined, market: Ord
           nonce: order?.nonce ?? undefined,
         });
         for (const fill of mine) {
-          fills.push({ fill: { ...fill, transactionHash: event.txHash }, filledAt: new Date(event.timestamp) });
+          fills.push({
+            fill: { ...fill, transactionHash: event.txHash ?? undefined },
+            filledAt: new Date(event.timestamp),
+          });
         }
       }
 

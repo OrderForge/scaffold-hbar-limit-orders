@@ -72,6 +72,8 @@ export const useChangedLevels = (depth: NormalizedDepth | null, highlightMs = 12
       const timer = setTimeout(() => forceTick(value => value + 1), highlightMs);
       return () => clearTimeout(timer);
     }
+    // Keyed on the book's sequence, not the depth object: a new object carrying the same
+    // sequence is not a change, and re-running on it would restart the highlights.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [depth?.lastUpdateId, depth?.timestamp]);
 

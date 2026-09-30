@@ -17,8 +17,6 @@
 export const PRICE_SCALE = 18;
 
 /** A decimal held exactly: value = units / 10^decimals. */
-export type Decimal = { units: bigint; decimals: number };
-
 const TEN = 10n;
 
 const pow10 = (exponent: number): bigint => TEN ** BigInt(exponent);
@@ -41,11 +39,6 @@ export const parseDecimal = (value: string, decimals: number): bigint => {
   return negative ? -units : units;
 };
 
-export const parseAmount = (value: string, decimals: number): Decimal => ({
-  units: parseDecimal(value, decimals),
-  decimals,
-});
-
 /** Render units as a decimal string. Never produces exponent notation. */
 export const formatUnits = (units: bigint, decimals: number, maxFractionDigits?: number): string => {
   const negative = units < 0n;
@@ -62,9 +55,6 @@ export const formatUnits = (units: bigint, decimals: number, maxFractionDigits?:
   const rendered = fraction ? `${whole}.${fraction}` : whole.toString();
   return negative && (whole !== 0n || fraction) ? `-${rendered}` : rendered;
 };
-
-export const formatAmount = (amount: Decimal, maxFractionDigits?: number): string =>
-  formatUnits(amount.units, amount.decimals, maxFractionDigits);
 
 /** Group the integer part with thin separators for display only. */
 export const formatWithGrouping = (value: string): string => {

@@ -12,6 +12,7 @@ import {
   RateLimitedError,
   extractErrorMessage,
 } from "./errors";
+import { z } from "zod";
 
 export type RequestOptions = {
   /** Cache the successful response for this many ms. 0 disables caching. */
@@ -155,4 +156,22 @@ export const withQuery = (base: string, params: Record<string, string | number |
   }
   const query = search.toString();
   return query ? `${base}?${query}` : base;
+};
+
+/**
+ * Check a response against the shape the code relies on, before anything reads it.
+ *
+ * Used for both the Orderbook API and the mirror node: a field that changes shape fails
+ * here, with the URL, instead of surfacing later as an `undefined` in the UI.
+ */
+export const parseResponse = <S extends z.ZodTypeAny>(schema: S, payload: unknown, url: string): z.infer<S> => {
+  const result = schema.safeParse(payload);
+  if (!result.success) {
+    throw new ClobParseError(
+      `Unexpected response shape: ${result.error.issues[0]?.message ?? "invalid"}`,
+      url,
+      payload,
+    );
+  }
+  return result.data;
 };

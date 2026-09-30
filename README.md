@@ -376,7 +376,7 @@ Copy `packages/hardhat/.env.example` → `packages/hardhat/.env` and `packages/n
 | `NEXT_PUBLIC_CLOB_NETWORK` | frontend | `testnet` (default) or `mainnet` |
 | `NEXT_PUBLIC_CLOB_API_URL` | frontend | Override the Orderbook API base, e.g. for a proxy |
 | `NEXT_PUBLIC_MIRROR_URL` | frontend | Hedera mirror node |
-| `NEXT_PUBLIC_DEFAULT_ORDERBOOK_ID` | frontend | Market shown by default |
+| `NEXT_PUBLIC_DEFAULT_ORDERBOOK_ID` | scripts | The market `yarn clob:fund` buys test tokens for (default `3`) |
 | `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` | frontend | WalletConnect project id |
 | `NEXT_PUBLIC_JOURNAL_TOPIC_ID` | frontend | HCS topic the journal reads |
 | `NEXT_PUBLIC_ENABLE_BURNER_WALLET` | frontend | `false` turns off the built-in burner wallet, which otherwise connects by itself |

@@ -59,7 +59,7 @@ const BEATS: Beat[] = [
 ];
 
 const main = async () => {
-  let chromium: any;
+  let chromium: typeof import("playwright").chromium;
   try {
     ({ chromium } = await import("playwright"));
   } catch {
@@ -84,7 +84,7 @@ const main = async () => {
   const viewport = { width: 1440, height: 900 };
 
   /** Video needs ffmpeg, which Playwright cannot install everywhere. Try, then fall back. */
-  let context: any;
+  let context: import("playwright").BrowserContext;
   let recording = true;
   try {
     context = await browser.newContext({ viewport, recordVideo: { dir: OUT, size: viewport } });

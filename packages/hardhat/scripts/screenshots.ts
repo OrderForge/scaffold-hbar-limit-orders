@@ -38,7 +38,7 @@ const privateKey = (): string | undefined => {
 const VIEWPORT = { width: 1400, height: 950 };
 
 const main = async () => {
-  let chromium: any;
+  let chromium: typeof import("playwright").chromium;
   try {
     ({ chromium } = await import("playwright"));
   } catch {
@@ -76,7 +76,7 @@ const main = async () => {
   };
 
   /** One element rather than the viewport, for a panel worth showing on its own. */
-  const shotOf = async (locator: any, name: string) => {
+  const shotOf = async (locator: import("playwright").Locator, name: string) => {
     await locator.screenshot({ path: path.join(OUT, `${name}.png`) });
     written.push(`${name}.png`);
     console.log(`  wrote ${name}.png`);
