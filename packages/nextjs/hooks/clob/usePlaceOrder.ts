@@ -33,10 +33,14 @@ export type PlaceResult = {
   status?: string;
   /** True when the order was submitted but the journal write failed. */
   journalPending: boolean;
+  /** The venue's nonce for this order — what identifies its fills on-chain. */
+  nonce?: string;
+  /** Where the intent was recorded, when the journal write succeeded. */
+  journal?: { topicId: string; sequenceNumber: number };
 };
 
 /**
- * Place an order: build → journal → sign → save.
+ * Place an order: build → sign → journal → save.
  *
  * The journal is written **before** the order reaches the venue, so the record of what was
  * signed exists even if submission fails. But journalling must never block a trade: if the
@@ -53,6 +57,12 @@ export const usePlaceOrder = (market: Orderbook) => {
   const [stage, setStage] = useState<PlaceStage>("idle");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PlaceResult | null>(null);
+  const [failedAt, setFailedAt] = useState<PlaceStage | undefined>(undefined);
+  // What each step produced, kept as it arrives: if the venue then rejects the order, the
+  // nonce and the journal receipt are still worth showing — the intent was recorded.
+  const [trail, setTrail] = useState<{ nonce?: string; journal?: PlaceResult["journal"]; journalPending?: boolean }>(
+    {},
+  );
 
   const place = async (
     side: OrderSide,
@@ -63,11 +73,20 @@ export const usePlaceOrder = (market: Orderbook) => {
     if (!address) return null;
     setError(null);
     setResult(null);
+    setFailedAt(undefined);
+    setTrail({});
+
+    // Tracked locally as well as in state, so a failure knows which step it interrupted.
+    let current: PlaceStage = "idle";
+    const enter = (next: PlaceStage) => {
+      current = next;
+      setStage(next);
+    };
 
     const base = getApiBase(config);
 
     try {
-      setStage("building");
+      enter("building");
       const orderRequest = buildOrderRequest(side, price, size, market, options);
 
       // The server assigns the nonce and may clamp the deadline: sign what it returns.
@@ -83,7 +102,9 @@ export const usePlaceOrder = (market: Orderbook) => {
       const built = buildResponseSchema.parse(buildPayload).orders[0];
       const signable = toSignableOrder(built);
 
-      setStage("signing");
+      setTrail(previous => ({ ...previous, nonce: String(built.info.nonce) }));
+
+      enter("signing");
       const typedData = {
         domain: {
           name: "PartialFillLimitOrderReactor",
@@ -99,10 +120,11 @@ export const usePlaceOrder = (market: Orderbook) => {
       const rawSignature = await signTypedDataAsync(typedData);
       const signature = withSignatureMode(rawSignature);
 
-      setStage("journalling");
+      enter("journalling");
       let journalPending = false;
+      let journal: PlaceResult["journal"];
       try {
-        await submitIntent(
+        const recorded = await submitIntent(
           buildIntent({
             action: "place",
             account: (await resolveHederaAccountId()) ?? address,
@@ -122,12 +144,15 @@ export const usePlaceOrder = (market: Orderbook) => {
             submitted: true,
           }),
         );
+        journal = { topicId: recorded.topicId, sequenceNumber: recorded.sequenceNumber };
+        setTrail(previous => ({ ...previous, journal }));
       } catch {
         // Never block a trade on the journal; surface it and offer a retry instead.
         journalPending = true;
+        setTrail(previous => ({ ...previous, journalPending: true }));
       }
 
-      setStage("saving");
+      enter("saving");
       const savePayload = await withAuth(token =>
         request<unknown>(`${base}/orders/save`, {
           method: "POST",
@@ -143,6 +168,8 @@ export const usePlaceOrder = (market: Orderbook) => {
         orderHash: saved.meta.orderHash,
         status: saved.meta.status,
         journalPending,
+        nonce: String(built.info.nonce),
+        journal,
       };
 
       setResult(placed);
@@ -151,12 +178,21 @@ export const usePlaceOrder = (market: Orderbook) => {
       return placed;
     } catch (cause) {
       setError(describeSaveError(cause));
+      setFailedAt(current);
       setStage("failed");
       return null;
     }
   };
 
-  return { place, stage, error, result, reset: () => (setStage("idle"), setError(null), setResult(null)) };
+  return {
+    place,
+    stage,
+    error,
+    result,
+    failedAt,
+    trail,
+    reset: () => (setStage("idle"), setError(null), setResult(null), setFailedAt(undefined), setTrail({})),
+  };
 };
 
 export type CancelStage = "idle" | "requesting" | "requested" | "confirmed" | "failed";

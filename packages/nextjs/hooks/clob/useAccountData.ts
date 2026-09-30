@@ -4,7 +4,7 @@ import { useClobAuth } from "./useClobAuth";
 import { useClobNetwork } from "./useClobNetwork";
 import { useQuery } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
-import { AccountOrder, Fees, OnboardingStatus } from "~~/lib/clob/types";
+import { AccountOrder, Fees, OnboardingStatus, normalizeEventType } from "~~/lib/clob/types";
 
 /** Fee rates for both sides, as the venue applies them to this account. */
 export const useFees = (orderbookId: string | undefined) => {
@@ -67,7 +67,14 @@ export const useOrders = () => {
   });
 };
 
-export const useOrderHistory = (orderId: string | null) => {
+/** Event types after which an order's history will not change. */
+const SETTLED = ["FILLED", "CANCELED", "CANCELLED", "EXPIRED", "REJECTED"];
+
+/**
+ * An order's history. With `follow`, it is re-read every few seconds until the order is
+ * filled or has ended — which is how the order ticket watches a fresh order settle.
+ */
+export const useOrderHistory = (orderId: string | null, options: { follow?: boolean } = {}) => {
   const { client, network } = useClobNetwork();
   const { isSignedIn, withAuth } = useClobAuth();
 
@@ -75,5 +82,10 @@ export const useOrderHistory = (orderId: string | null) => {
     queryKey: ["clob", network, "order-history", orderId, isSignedIn],
     enabled: Boolean(orderId && isSignedIn),
     queryFn: ({ signal }) => withAuth(token => client.getOrderHistory(orderId as string, token, signal)),
+    refetchInterval: query => {
+      if (!options.follow) return false;
+      const ended = query.state.data?.events.some(event => SETTLED.includes(normalizeEventType(event.type)));
+      return ended ? false : 3_000;
+    },
   });
 };

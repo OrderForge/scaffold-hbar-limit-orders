@@ -439,7 +439,7 @@ packages/nextjs/
   lib/hedera/    the six onboarding steps, derived from chain reads
   lib/journal/   HCS order-intent records
   lib/verify/    fill verification against the signed order
-  test/          197 unit tests, offline against fixtures captured from the live API
+  test/          207 unit tests, offline against fixtures captured from the live API
 docs/            microstructure, integration, hedera, discrepancies
 .harness/        harness spec, increment PRDs, validators
 ```

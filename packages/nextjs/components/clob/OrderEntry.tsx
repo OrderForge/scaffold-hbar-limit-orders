@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { OrderProgress } from "./OrderProgress";
 import { SignInButton } from "./SignInButton";
 import { WalletGate } from "./WalletGate";
 import { useQuery } from "@tanstack/react-query";
@@ -39,7 +40,7 @@ const useSpendableBalance = (market: Orderbook, side: OrderSide) => {
 export const OrderEntry = ({ market }: { market: Orderbook }) => {
   const { config } = useClobNetwork();
   const { data: onboarding } = useOnboarding(market);
-  const { place, stage, error, result, reset } = usePlaceOrder(market);
+  const { place, stage, error, result, failedAt, trail, reset } = usePlaceOrder(market);
   const links = hashscan(config);
 
   const [side, setSide] = useState<OrderSide>("SELL");
@@ -233,6 +234,18 @@ export const OrderEntry = ({ market }: { market: Orderbook }) => {
             {busy ? stageLabel[stage] : `${side === "BUY" ? "Buy" : "Sell"} ${market.baseTokenSymbol}`}
           </button>
 
+          {/* Every step of the order, from the click to the verified fill. */}
+          {stage !== "idle" && (
+            <OrderProgress
+              market={market}
+              stage={stage}
+              failedAt={failedAt}
+              error={error}
+              result={result}
+              trail={trail}
+            />
+          )}
+
           {result && (
             <div className="mt-3 rounded-box bg-success/15 p-3 text-xs">
               <p className="font-medium">Order {result.orderId} is live.</p>
@@ -254,7 +267,9 @@ export const OrderEntry = ({ market }: { market: Orderbook }) => {
             </div>
           )}
 
-          {error && <p className="mt-3 text-xs text-error">{error}</p>}
+          {/* The stepper names the error against the step that failed; only a failure before
+              any step started (no wallet, say) needs its own line. */}
+          {error && (!failedAt || failedAt === "idle") && <p className="mt-3 text-xs text-error">{error}</p>}
         </>
       </WalletGate>
 
