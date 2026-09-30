@@ -180,7 +180,7 @@ orders per build or save, 500 per cancel.
 
 ## What to copy
 
-`packages/nextjs/lib/clob/` has no React in it and no dependency on this app. If you are
+`packages/nextjs/lib/clob/` has no React in it and no dependency on the frontend. If you are
 building something else against this API, the files worth taking wholesale:
 
 | File | Why |

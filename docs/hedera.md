@@ -85,7 +85,7 @@ it is sent to SaucerSwap:
 
 **What it proves:** what you signed, and when, ordered by consensus rather than by the
 venue's clock. The topic is public, so anyone can audit it from the mirror node without
-this app, and no one — including the venue — can alter or reorder an entry after the fact.
+this template, and no one — including the venue — can alter or reorder an entry after the fact.
 
 **What it does not prove:** that the venue matched you fairly. It is your record of your
 own side.
@@ -201,8 +201,8 @@ The argument is narrower and, I think, more honest:
    with expensive finality you would batch, and per-fill verification would be impractical.
 2. **HCS gives a user-side audit trail for fractions of a cent**, so keeping your own
    ordered record of what you signed costs nothing worth mentioning.
-3. **The mirror node makes verification free and public.** Anyone can re-run every check in
-   this template without an API key, an account, or this app.
+3. **The mirror node makes verification free and public.** Anyone can re-run every check
+   here without an API key, an account, or this template's code.
 
 Those three together are what make "every fill verified against what you signed" a feature
 you can ship rather than a claim you make.

@@ -1,6 +1,6 @@
 # Agent instructions
 
-Briefing for coding agents in this app (Cursor, Claude Code, Codex). Claude Code loads it through `CLAUDE.md`.
+Briefing for coding agents working in this template (Cursor, Claude Code, Codex). Claude Code loads it through `CLAUDE.md`.
 
 **limit-orders** — Hardhat + Next.js template and reference client for **SaucerSwap's V3 central limit
 order book** on Hedera: live market data with no wallet, on-chain onboarding (HTS association → Permit2),

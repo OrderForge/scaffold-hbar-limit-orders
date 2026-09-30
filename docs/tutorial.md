@@ -8,8 +8,8 @@ testnet only, with test tokens.
 About an hour, end to end. Chapters 0 and 1 take five minutes and need nothing at all.
 
 > **Testnet is sometimes halted.** SaucerSwap's testnet market (book 3, SAUCE/USDC) stops
-> accepting orders when its settlement service runs low on HBAR. The app says so on the
-> market page. Chapters 0–4 work regardless; for 5 and 6, check that the market shows
+> accepting orders when its settlement service runs low on HBAR. The template says so on
+> the market page. Chapters 0–4 work regardless; for 5 and 6, check that the market shows
 > **OPEN**, and if it does not, ask in SaucerSwap's Discord — that is how it was reopened
 > the last time.
 
@@ -147,7 +147,7 @@ associate, and an HBAR allowance instead of an approve — see
 
 ## Chapter 4 — Turn on the journal
 
-Every order this app signs is written to a Hedera Consensus Service topic *before* it
+Every order the template signs is written to a Hedera Consensus Service topic *before* it
 reaches the venue, so you keep your own consensus-timestamped record of what you signed.
 The topic needs an operator account to pay for messages — the account from Chapter 2 is
 fine. Put its `0.0.x` id and key in `packages/hardhat/.env`, then:

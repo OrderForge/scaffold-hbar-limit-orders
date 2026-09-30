@@ -28,17 +28,38 @@ works too.
 
 ## Contents
 
-1. [Run it in 60 seconds](#run-it-in-60-seconds) — no keys, no wallet
-2. [What you get](#what-you-get) — and what you still trust the venue for
-3. [What you could build with it](#what-you-could-build-with-it) — six starting points
-4. [See it working](#see-it-working) — the wallet half, in pictures
-5. [How it works](#how-it-works) — architecture, the order path, where each piece lives
-6. [Set up the on-chain half](#set-up-the-on-chain-half) — keys, journal topic, test tokens
-7. [Configuration](#configuration) — [modes](#modes), networks, environment
-8. [Reference](#reference) — commands, layout, wallet setup, units
-9. [Documentation](#documentation) — the tutorial, the guides, and which to read first
-10. [What this does not do](#what-this-does-not-do)
-11. [Common issues](#common-issues) — the errors you are likely to meet, and what they mean
+1. [Prerequisites](#prerequisites) — what you need to look, and what you need to trade
+2. [Run it in 60 seconds](#run-it-in-60-seconds) — no keys, no wallet
+3. [What you get](#what-you-get) — and what you still trust the venue for
+4. [What you could build with it](#what-you-could-build-with-it) — six starting points
+5. [See it working](#see-it-working) — the wallet half, in pictures
+6. [How it works](#how-it-works) — architecture, the order path, where each piece lives
+7. [Set up the on-chain half](#set-up-the-on-chain-half) — keys, journal topic, test tokens
+8. [Configuration](#configuration) — [modes](#modes), networks, environment
+9. [Reference](#reference) — commands, layout, wallet setup, units
+10. [Documentation](#documentation) — the tutorial, the guides, and which to read first
+11. [What this does not do](#what-this-does-not-do)
+12. [Common issues](#common-issues) — the errors you are likely to meet, and what they mean
+
+## Prerequisites
+
+**To run it and read live markets** — no wallet, no keys:
+
+- Node.js ≥ 20.18.3 and Git
+- Yarn 3, which the project pins. If `yarn` is missing, run `corepack enable` once (no global install, no
+  sudo), or use the copy the project carries: `node .yarn/releases/yarn-3.2.3.cjs <command>`
+
+**To place orders on testnet**, add:
+
+- [MetaMask](https://metamask.io/) with an **ECDSA** account — EIP-712 order signing needs an EVM address,
+  which ED25519 accounts do not have. MetaMask is the tested wallet; others that connect through
+  WalletConnect may work, but have not been tried.
+- Testnet HBAR from the [Hedera Portal faucet](https://portal.hedera.com/faucet). `yarn clob:fund` turns
+  some of it into the market's test tokens.
+- Optionally, a [WalletConnect project ID](https://cloud.reown.com) in `packages/nextjs/.env`; a shared
+  fallback works for local use.
+
+The [tutorial](docs/tutorial.md) walks through all of it.
 
 ## Run it in 60 seconds
 
@@ -58,9 +79,9 @@ data. Reading mainnet prices moves no funds; wallet actions stay on your wallet'
 <p align="center"><em>HBAR/USDC on mainnet: the depth chart over 100+ levels of real depth, the spread, and a
 trade tape linked to settlement transactions.</em></p>
 
-> **Why requests go through this app's own `/api/clob` route:** the Orderbook API sends no CORS headers,
+> **Why requests go through the template's own `/api/clob` route:** the Orderbook API sends no CORS headers,
 > so a browser cannot call it directly however public the endpoint is — it is built for server-side
-> clients. The app forwards the request from its server instead. The proxy holds no credentials. See
+> clients. The template forwards the request from its own server instead. The proxy holds no credentials. See
 > [docs/DISCREPANCIES.md](docs/DISCREPANCIES.md).
 
 ## What you get
@@ -111,7 +132,7 @@ template is the client that talks to them correctly.
 
 ## See it working
 
-Connect a wallet and the app follows **its** network, because an approval signed on one chain says
+Connect a wallet and the template follows **its** network, because an approval signed on one chain says
 nothing about the other. The readiness checklist is derived from the chain — the mirror node and the
 contracts — rather than from the venue's view of your account.
 
@@ -179,7 +200,7 @@ flowchart LR
         WALLET["Wallet<br/><small>EIP-712 signing</small>"]
     end
 
-    subgraph server["This app's server"]
+    subgraph server["Your server (this template)"]
         direction TB
         PROXY["/api/clob<br/><small>proxy, no credentials</small>"]
         JOURNAL["/api/journal<br/><small>holds the operator key</small>"]
@@ -308,14 +329,14 @@ configuration alone — no code changes.
 | **Custom endpoint** | `NEXT_PUBLIC_CLOB_API_URL=<your proxy>` | Pointing at a proxy, a mirror of the API, or a local fake for tests. |
 
 The honest trade-off with mainnet-read: **market data and trading can be on different
-networks**, which is confusing enough to be dangerous. So the app does not allow it
+networks**, which is confusing enough to be dangerous. So the template does not allow it
 silently — once a wallet is connected the viewed network follows the wallet, and
 deliberately reading the other network marks everything wallet-related read-only until the
 two agree.
 
 Testnet liquidity is thin. At the time of writing, testnet has one open market (book 3,
 SAUCE/USDC), and it was halted from 2026-09-19 to 2026-09-30 while its settlement service
-was out of HBAR. That is why the mainnet-read mode exists, and why the app renders halted
+was out of HBAR. That is why the mainnet-read mode exists, and why the template renders halted
 and empty books as first-class states rather than errors.
 
 ### Optional features
@@ -331,7 +352,7 @@ yarn clob:feature remove depth-chart   # delete its files and every reference to
 ```
 
 The switches live in `packages/nextjs/features.config.ts`, next to `scaffold.config.ts`. `remove`
-previews what it will delete and asks for `--yes`; afterwards the app still type-checks, lints and
+previews what it will delete and asks for `--yes`; afterwards the project still type-checks, lints and
 builds, with no dead code left behind. It finds the feature's code by marker comments
 (`{/* feature:depth-chart */}` … `{/* /feature:depth-chart */}`), so a new optional feature joins by
 adding an entry to `scripts/feature.mjs` and marking its code the same way.
@@ -390,20 +411,6 @@ yarn smoke                      # browser smoke test against a running build
 yarn hedera-harness validate    # the full harness: commands, static checks, browser
 yarn lint:wording               # fail the build if the docs claim more than the design backs
 ```
-
-<details>
-<summary><strong>Prerequisites</strong></summary>
-
-- Node.js ≥ 20.18.3, Git
-- Yarn 3 — the repo pins it. If `yarn` is missing, enable Node's bundled Corepack once:
-  `corepack enable`. No global install and no sudo needed. If you would rather not touch
-  your global setup, the repo carries its own copy: `node .yarn/releases/yarn-3.2.3.cjs <command>`
-- A Hedera-compatible wallet for the on-chain steps — [MetaMask](https://metamask.io/) or
-  [HashPack](https://www.hashpack.app/). Market data needs none.
-- [WalletConnect project ID](https://cloud.reown.com) in `packages/nextjs/.env` (a shared fallback works
-  for local demos)
-
-</details>
 
 <details>
 <summary><strong>Wallet setup</strong> — only needed for on-chain steps</summary>
@@ -517,7 +524,7 @@ would have failed the moment testnet halted — testing the venue rather than th
 - **Cancellation is not instant.** A `202` is an acknowledgement; the UI says "cancel requested" until the
   order's history confirms it, because an order that is still live can still fill.
 - **Keyless market data is a rollout, not a guarantee.** If a network has not had it yet, public reads
-  answer `401` and the app says so instead of showing a login prompt nobody can satisfy.
+  answer `401` and the template says so instead of showing a login prompt nobody can satisfy.
 
 ## Common issues
 
