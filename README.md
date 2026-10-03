@@ -11,6 +11,10 @@ The `--` matters: without it npm keeps `--template` for itself, and you get the 
 template instead of this one. `npx create-scaffold-hbar@latest --template OrderForge/scaffold-hbar-limit-orders`
 works too.
 
+**Live demo:** [scaffold-hbar-limit-orders.vercel.app](https://scaffold-hbar-limit-orders.vercel.app). It reads
+both networks and trades on testnet only. Mainnet is read-only there, and the HCS journal is off, so
+[host your own](#hosting-a-public-demo) to try everything.
+
 > **Status:** complete and working — market terminal, live depth over WebSocket, onboarding, wallet
 > login, order placement and cancellation, the HCS journal, and on-chain fill verification.
 >
