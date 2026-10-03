@@ -365,6 +365,18 @@ There is no price chart, on purpose: the Orderbook API has no candle or price-hi
 trades are capped at the latest 100 — about 16 hours on the busiest mainnet market. A chart that
 implied more history than that would be misleading.
 
+### Hosting a public demo
+
+`packages/nextjs` deploys to Vercel as it is: run `vercel` from `packages/nextjs`, or import the repo
+with `packages/nextjs` as the root directory. A URL anyone can open needs three settings that a local
+copy does not:
+
+| Setting | Why |
+| --- | --- |
+| `NEXT_PUBLIC_READ_ONLY_NETWORKS=mainnet` | Visitors can read mainnet but cannot sign real-money orders through your site |
+| `NEXT_PUBLIC_ENABLE_BURNER_WALLET=false` | A burner keeps its key in the visitor's browser storage |
+| no `HEDERA_OPERATOR_KEY` | Otherwise every visitor's journal entry is paid from your account. The journal step then reports that it is not configured, and orders still go through |
+
 <details>
 <summary><strong>Environment variables</strong></summary>
 
@@ -380,6 +392,7 @@ Copy `packages/hardhat/.env.example` → `packages/hardhat/.env` and `packages/n
 | `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` | frontend | WalletConnect project id |
 | `NEXT_PUBLIC_JOURNAL_TOPIC_ID` | frontend | HCS topic the journal reads |
 | `NEXT_PUBLIC_ENABLE_BURNER_WALLET` | frontend | `false` turns off the built-in burner wallet, which otherwise connects by itself |
+| `NEXT_PUBLIC_READ_ONLY_NETWORKS` | frontend | Networks this deployment only reads, e.g. `mainnet`; every wallet action is refused on them |
 | `JOURNAL_TOPIC_ID` | server | HCS topic the journal writes to |
 | `HEDERA_OPERATOR_ID` / `HEDERA_OPERATOR_KEY` | server | Pays for journal messages. **Never** prefix the key with `NEXT_PUBLIC_` |
 | `DEPLOYER_PRIVATE_KEY` | hardhat | Only for the on-chain scripts; never committed |

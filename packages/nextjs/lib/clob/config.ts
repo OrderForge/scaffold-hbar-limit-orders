@@ -66,6 +66,20 @@ const stripTrailingSlash = (url: string) => url.replace(/\/+$/, "");
 export const getDefaultNetwork = (): ClobNetwork =>
   process.env.NEXT_PUBLIC_CLOB_NETWORK === "mainnet" ? "mainnet" : "testnet";
 
+/**
+ * Networks this deployment only reads. `NEXT_PUBLIC_READ_ONLY_NETWORKS=mainnet` keeps a
+ * public demo from becoming a place to sign real-money orders: market data still loads, but
+ * every wallet action is refused, whichever chain the wallet is on.
+ */
+export const isReadOnlyByConfig = (
+  network: ClobNetwork,
+  setting: string | undefined = process.env.NEXT_PUBLIC_READ_ONLY_NETWORKS,
+): boolean =>
+  (setting ?? "")
+    .split(",")
+    .map(entry => entry.trim().toLowerCase())
+    .includes(network);
+
 export const getNetworkConfig = (network: ClobNetwork = getDefaultNetwork()): ClobNetworkConfig => {
   const base = CLOB_NETWORKS[network];
   const apiOverride = process.env.NEXT_PUBLIC_CLOB_API_URL;

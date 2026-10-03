@@ -18,7 +18,21 @@ const LABELS: Record<ClobNetwork, string> = { testnet: "Testnet", mainnet: "Main
  */
 export const NetworkToggle = () => {
   const { isConnected } = useAccount();
-  const { network, setNetwork, isReadOnlyNetwork, walletNetwork } = useClobNetwork();
+  const { network, setNetwork, isReadOnlyNetwork, isReadOnlyDeployment, walletNetwork } = useClobNetwork();
+  const deploymentBadge = isReadOnlyDeployment && (
+    <span className="badge badge-ghost badge-sm" title="Set by NEXT_PUBLIC_READ_ONLY_NETWORKS">
+      read-only on this deployment
+    </span>
+  );
+
+  if (isConnected && !isReadOnlyNetwork && isReadOnlyDeployment) {
+    return (
+      <div className="flex items-center gap-2 text-xs">
+        <span className="opacity-60">reading {LABELS[network]}</span>
+        {deploymentBadge}
+      </div>
+    );
+  }
 
   if (isConnected) {
     if (isReadOnlyNetwork) {
@@ -61,6 +75,7 @@ export const NetworkToggle = () => {
         ))}
       </div>
       <span className="text-xs opacity-50">market data</span>
+      {deploymentBadge}
     </div>
   );
 };

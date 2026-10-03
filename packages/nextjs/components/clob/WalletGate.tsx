@@ -6,7 +6,7 @@ import { useAccount, useSwitchChain } from "wagmi";
 import { RainbowKitCustomConnectButton } from "~~/components/scaffold-hbar";
 import { useClobAuth } from "~~/hooks/clob/useClobAuth";
 import { useClobNetwork } from "~~/hooks/clob/useClobNetwork";
-import { CLOB_NETWORKS } from "~~/lib/clob/config";
+import { CLOB_NETWORKS, isReadOnlyByConfig } from "~~/lib/clob/config";
 
 /**
  * One place that decides whether a wallet action is possible, so every panel tells the
@@ -32,9 +32,27 @@ export const WalletGate = ({
   showConnectButton?: boolean;
 }) => {
   const { isConnected } = useAccount();
-  const { network, walletNetwork, walletOnUnsupportedChain, isReadOnlyNetwork, setNetwork } = useClobNetwork();
+  const { network, walletNetwork, walletOnUnsupportedChain, isReadOnlyNetwork, isReadOnlyDeployment, setNetwork } =
+    useClobNetwork();
   const { isSignedIn } = useClobAuth();
   const { switchChain, isPending } = useSwitchChain();
+
+  if (isReadOnlyDeployment) {
+    const other = network === "mainnet" ? "testnet" : "mainnet";
+    return (
+      <div className="flex flex-col items-start gap-2">
+        <p className="text-xs opacity-70">
+          This deployment only reads <span className="font-medium">{network}</span>. To {action} here, scaffold the
+          template and run it yourself.
+        </p>
+        {!isReadOnlyByConfig(other) && (
+          <button type="button" className="btn btn-outline btn-xs" onClick={() => setNetwork(other)}>
+            View {other} instead
+          </button>
+        )}
+      </div>
+    );
+  }
 
   if (!isConnected) {
     return (

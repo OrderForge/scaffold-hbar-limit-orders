@@ -3,7 +3,13 @@
 import { ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useAccount } from "wagmi";
 import { ClobClient } from "~~/lib/clob/client";
-import { CLOB_NETWORKS, ClobNetwork, getDefaultNetwork, getNetworkConfig } from "~~/lib/clob/config";
+import {
+  CLOB_NETWORKS,
+  ClobNetwork,
+  getDefaultNetwork,
+  getNetworkConfig,
+  isReadOnlyByConfig,
+} from "~~/lib/clob/config";
 import { MirrorClient } from "~~/lib/mirror/client";
 
 type ClobNetworkContextValue = {
@@ -23,6 +29,8 @@ type ClobNetworkContextValue = {
    * state, because an approval signed on one chain says nothing about the other.
    */
   isReadOnlyNetwork: boolean;
+  /** This deployment only reads the network on screen (`NEXT_PUBLIC_READ_ONLY_NETWORKS`). */
+  isReadOnlyDeployment: boolean;
 };
 
 const ClobNetworkContext = createContext<ClobNetworkContextValue | null>(null);
@@ -78,6 +86,7 @@ export const ClobNetworkProvider = ({ children }: { children: ReactNode }) => {
       walletNetwork,
       walletOnUnsupportedChain: isConnected && walletNetwork === null,
       isReadOnlyNetwork: isConnected && walletNetwork !== null && walletNetwork !== network,
+      isReadOnlyDeployment: isReadOnlyByConfig(network),
     };
   }, [network, setNetwork, walletNetwork, isConnected]);
 
