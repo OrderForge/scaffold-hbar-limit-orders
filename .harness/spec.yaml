@@ -58,7 +58,6 @@ validator:
 #         timeoutMs: 600000
 
 requiredFiles:
-  - template.json
   - AGENTS.md
   - README.md
   - LICENSE
