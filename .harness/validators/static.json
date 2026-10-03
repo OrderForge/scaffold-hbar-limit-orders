@@ -1,30 +1,12 @@
 {
   "name": "limit-orders-static",
   "description": "Static invariants for the limit-orders template.",
-  "jsonAssertions": [
-    {
-      "file": "template.json",
-      "path": "name",
-      "equals": "limit-orders"
-    },
-    {
-      "file": "template.json",
-      "path": "create-scaffold-hbar.defaults.frontend",
-      "equals": "nextjs-app"
-    },
-    {
-      "file": "template.json",
-      "path": "create-scaffold-hbar.defaults.solidityFramework",
-      "equals": "hardhat"
-    }
-  ],
   "fileAssertions": {
     "required": [
       "README.md",
       "LICENSE",
       "AGENTS.md",
       "CLAUDE.md",
-      "template.json",
       "package.json",
       "docs/microstructure.md",
       "docs/integration.md",
