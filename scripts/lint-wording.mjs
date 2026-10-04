@@ -24,7 +24,7 @@ const BANNED = [
 const EXEMPT_HEADINGS = [/what you still trust/i, /does not prove/i, /wording rules/i];
 
 const files = [
-  "README.md",
+  ...["README.md", "AGENTS.md", "CONTRIBUTING.md", "SECURITY.md"].filter(name => existsSync(name)),
   ...(existsSync("docs") ? readdirSync("docs").filter(name => name.endsWith(".md")).map(name => join("docs", name)) : []),
 ];
 
