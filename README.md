@@ -422,6 +422,7 @@ yarn clob:bootstrap             # create the HCS journal topic (idempotent)
 yarn clob:status                # check API, contracts, operator and journal
 yarn clob:fund --hbar 20        # swap HBAR into a market's tokens
 yarn clob:doctor                # check the live API still matches what this was built against
+yarn clob:doctor --place        # also place a resting testnet order and cancel it (needs a key)
 yarn clob:demo                  # record a walkthrough of the running app
 yarn clob:shots                 # re-capture the README screenshots
 yarn clob:feature list          # optional features: list / on / off / remove
@@ -501,6 +502,10 @@ static validator and secret scan are clean, and the browser gate passes 6/6 rout
 It serves the production build the command tier has just made, rather than a dev server that would spend
 its first minute compiling. Playwright uses its own browser where it can install one and system Chrome
 where it cannot — macOS 13, for one.
+
+Once you have set up the on-chain half, the secret scan fails on purpose: it refuses to pass while
+`packages/nextjs/.env`, `packages/hardhat/.env` or `.clob.json` exist, even though git ignores them, so a
+key can never ship with the template. Validate a clean checkout, or move those files aside first.
 
 The harness gate checks that each route loads, renders and logs no errors; it does not read the text each
 route promises. `yarn smoke` checks that too, against a running build:
