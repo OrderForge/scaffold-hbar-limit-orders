@@ -11,6 +11,18 @@ The `--` matters: without it npm keeps `--template` for itself, and you get the 
 template instead of this one. `npx create-scaffold-hbar@latest --template OrderForge/scaffold-hbar-limit-orders`
 works too.
 
+<p align="center">
+  <a href="https://youtu.be/WejBlTjknAE"><img src="https://img.youtube.com/vi/WejBlTjknAE/maxresdefault.jpg" alt="Watch the limit-orders demo video on YouTube" width="720" /></a><br />
+  <sub>▶ <a href="https://youtu.be/WejBlTjknAE">Watch the 4-minute demo</a>: one command to scaffold, live markets with no keys,
+  wallet onboarding, a signed order through every step to a fill checked on-chain, and features switched off
+  from the command line.</sub>
+</p>
+
+**Proven on testnet:** real orders [placed, filled and checked against what was signed](#verified-live-on-testnet) ·
+[30/30 live API checks](#reference), including a real order placed and cancelled · 210 tests, run by
+[CI](.github/workflows/ci.yaml) on every push · [15 places the API differs from its docs](docs/DISCREPANCIES.md),
+each one handled.
+
 **Live demo:** [scaffold-hbar-limit-orders.vercel.app](https://scaffold-hbar-limit-orders.vercel.app). It reads
 both networks and trades on testnet only. Mainnet is read-only there, and the HCS journal is off, so
 [host your own](#hosting-a-public-demo) to try everything.
@@ -44,6 +56,7 @@ both networks and trades on testnet only. Mainnet is read-only there, and the HC
 10. [Documentation](#documentation) — the tutorial, the guides, and which to read first
 11. [What this does not do](#what-this-does-not-do)
 12. [Common issues](#common-issues) — the errors you are likely to meet, and what they mean
+13. [Security](#security) and [Contributing](#contributing) — reporting, and the checks that guard `main`
 
 ## Prerequisites
 
@@ -618,6 +631,25 @@ Stop it before building.
 
 **The deployer shows an EVM address, not a Hedera account id.** `yarn hardhat:account:generate` prints the
 `0x…` form. Both that and `0.0.xxxxx` work with the [faucet](https://portal.hedera.com/faucet).
+
+## Security
+
+This template is experimental and not audited. [SECURITY.md](SECURITY.md) explains where every key lives,
+how allowances are capped and when they expire, and what a public deployment needs. To report a
+vulnerability, use **Security → Report a vulnerability** on this repository, not a public issue.
+
+## Contributing
+
+Issues and pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers setup, the checks CI runs,
+the money rules review holds you to, and what to do when the API changes. Five workflows guard `main`:
+
+| Workflow | What it proves |
+| --- | --- |
+| [CI](.github/workflows/ci.yaml) | Lint, types, both test suites and the production build pass, and no secret is tracked |
+| [Fresh scaffold](.github/workflows/fresh-scaffold.yaml) | `npm create scaffold-hbar` from GitHub produces a project that lints, tests, builds and serves its core routes |
+| [Hedera Harness](.github/workflows/harness.yaml) | The full harness recipe passes, including the browser gate |
+| [API doctor](.github/workflows/doctor.yaml) | Daily: SaucerSwap's live API still behaves the way the template expects |
+| [CodeQL](.github/workflows/codeql.yaml) | GitHub's code scanning finds no new problem |
 
 ## Links
 
