@@ -372,13 +372,14 @@ implied more history than that would be misleading.
 ### Hosting a public demo
 
 `packages/nextjs` deploys to Vercel as it is: run `vercel` from `packages/nextjs`, or import the repo
-with `packages/nextjs` as the root directory. A URL anyone can open needs three settings that a local
+with `packages/nextjs` as the root directory. A URL anyone can open needs four settings that a local
 copy does not:
 
 | Setting | Why |
 | --- | --- |
 | `NEXT_PUBLIC_READ_ONLY_NETWORKS=mainnet` | Visitors can read mainnet but cannot sign real-money orders through your site |
 | `NEXT_PUBLIC_ENABLE_BURNER_WALLET=false` | A burner keeps its key in the visitor's browser storage |
+| `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` | Your own, from [cloud.reown.com](https://cloud.reown.com), with your domain added to it. The built-in fallback is shared by every scaffold project, so wallets cannot verify your site: HashPack flagged our demo as malicious while it used the fallback |
 | no `HEDERA_OPERATOR_KEY` | Otherwise every visitor's journal entry is paid from your account. The journal step then reports that it is not configured, and orders still go through |
 
 <details>
@@ -574,6 +575,14 @@ price. Post-only orders never take liquidity; untick it, or price at the best as
 **"Cancel requested", but the order is still active.** A `202` from the venue is an acknowledgement, not
 a cancellation. The row changes to `CANCELED` once the order's history confirms it, usually within
 seconds; until then it can still fill.
+
+**HashPack says "Only ECDSA accounts are able to use this dapp".** Orders are EIP-712 signatures and
+the onboarding steps are EVM calls, so the account must be ECDSA. HashPack creates ED25519 accounts by
+default: switch to, or import, an ECDSA account.
+
+**A wallet warns that the site is malicious or unverified.** You are probably on the shared
+WalletConnect project ID. Create your own at [cloud.reown.com](https://cloud.reown.com), add your domain,
+and set `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`.
 
 **Fill verification says "check failed".** Read which check. Before trusting it, make sure you are
 signed in as the account that placed the order: fills are matched to an order by swapper and nonce.
