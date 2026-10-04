@@ -8,7 +8,7 @@ on:
 
 # Everything here runs offline against the fixtures captured in
 # packages/nextjs/test/fixtures, so CI never fails because SaucerSwap is having a bad day.
-# The live conformance check is `yarn clob:doctor`, deliberately kept out of CI — see below.
+# The live conformance check, `yarn clob:doctor`, runs once a day in doctor.yaml instead.
 jobs:
   build:
     runs-on: ubuntu-latest

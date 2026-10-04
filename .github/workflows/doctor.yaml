@@ -1,0 +1,31 @@
+name: API doctor
+
+# Checks, once a day, that SaucerSwap's live Orderbook API still behaves the way this template
+# was built against. It fails only when an assumption the code depends on has changed; a
+# halted or quiet market is reported as a network condition, not a failure. It runs on a
+# schedule rather than on every push so a bad day at the venue never blocks a change here.
+on:
+  schedule:
+    - cron: "30 7 * * *"
+  workflow_dispatch:
+
+jobs:
+  doctor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup node env
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Check the live API (testnet, no key)
+        run: yarn clob:doctor

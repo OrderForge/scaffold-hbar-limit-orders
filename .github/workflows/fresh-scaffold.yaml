@@ -1,0 +1,70 @@
+name: Fresh scaffold
+
+# Does exactly what a new developer, or a judge, does first: scaffold the template from GitHub with
+# `npm create scaffold-hbar`, then lint, test, build and boot what comes out. CI builds this
+# repository; this builds what people actually get.
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  scaffold:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Setup node env
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Enable corepack, for the Yarn version the template pins
+        run: corepack enable
+
+      - name: Configure git for the scaffold's initial commit
+        run: |
+          git config --global user.name "fresh-scaffold"
+          git config --global user.email "fresh-scaffold@users.noreply.github.com"
+
+      - name: Scaffold from GitHub
+        working-directory: ${{ runner.temp }}
+        run: npm create scaffold-hbar@latest my-dapp -- --template ${{ github.repository }} --yes
+
+      - name: Lint
+        working-directory: ${{ runner.temp }}/my-dapp
+        run: yarn lint
+
+      - name: Check types
+        working-directory: ${{ runner.temp }}/my-dapp
+        run: yarn next:check-types
+
+      - name: Client tests
+        working-directory: ${{ runner.temp }}/my-dapp
+        run: yarn test:clob
+
+      - name: Contract tests
+        working-directory: ${{ runner.temp }}/my-dapp
+        run: yarn hardhat:test
+
+      - name: Production build
+        working-directory: ${{ runner.temp }}/my-dapp
+        run: yarn next:build
+
+      - name: Boot and load the core routes
+        working-directory: ${{ runner.temp }}/my-dapp
+        run: |
+          yarn next:start > next.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            curl -s -o /dev/null http://localhost:3000/ && break
+            sleep 2
+          done
+          failed=0
+          for route in / /markets /market/3 /orders /journal /debug; do
+            status=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:3000$route")
+            echo "$route $status"
+            [ "$status" = "200" ] || failed=1
+          done
+          [ "$failed" = "0" ] || { cat next.log; exit 1; }

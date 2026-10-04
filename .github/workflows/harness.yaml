@@ -1,0 +1,35 @@
+name: Hedera Harness
+
+# The full recipe in .harness/: the command tier, the static validator and secret scan, and the
+# browser gate against the production build. A checkout has no .env or .clob.json, which is
+# what the secret scan requires.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup node env
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Install the browser for the gate
+        run: yarn playwright install --with-deps chromium
+
+      - name: Validate
+        run: yarn hedera-harness validate
