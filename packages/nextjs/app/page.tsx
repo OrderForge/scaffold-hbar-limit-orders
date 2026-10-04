@@ -54,7 +54,7 @@ const Home: NextPage = () => {
             <div className="flex flex-col bg-base-100 px-8 py-8 text-center items-center rounded-3xl flex-1">
               <BugAntIcon className="h-8 w-8 fill-secondary" />
               <p>
-                Inspect contracts at{" "}
+                Read SaucerSwap&apos;s settlement and Permit2 contracts at{" "}
                 <Link href="/debug" passHref className="link">
                   /debug
                 </Link>
