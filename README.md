@@ -3,6 +3,8 @@
 Add non-custodial limit orders from SaucerSwap's order book to any Hedera app, with every fill verified
 on-chain against what you signed.
 
+[![CI](https://github.com/OrderForge/scaffold-hbar-limit-orders/actions/workflows/ci.yaml/badge.svg)](https://github.com/OrderForge/scaffold-hbar-limit-orders/actions/workflows/ci.yaml) [![Fresh scaffold](https://github.com/OrderForge/scaffold-hbar-limit-orders/actions/workflows/fresh-scaffold.yaml/badge.svg)](https://github.com/OrderForge/scaffold-hbar-limit-orders/actions/workflows/fresh-scaffold.yaml) [![Hedera Harness](https://github.com/OrderForge/scaffold-hbar-limit-orders/actions/workflows/harness.yaml/badge.svg)](https://github.com/OrderForge/scaffold-hbar-limit-orders/actions/workflows/harness.yaml) [![API doctor](https://github.com/OrderForge/scaffold-hbar-limit-orders/actions/workflows/doctor.yaml/badge.svg)](https://github.com/OrderForge/scaffold-hbar-limit-orders/actions/workflows/doctor.yaml) [![CodeQL](https://github.com/OrderForge/scaffold-hbar-limit-orders/actions/workflows/codeql.yaml/badge.svg)](https://github.com/OrderForge/scaffold-hbar-limit-orders/actions/workflows/codeql.yaml)
+
 ```bash
 npm create scaffold-hbar@latest -- --template OrderForge/scaffold-hbar-limit-orders
 ```
@@ -18,10 +20,35 @@ works too.
   from the command line.</sub>
 </p>
 
-**Proven on testnet:** real orders [placed, filled and checked against what was signed](#verified-live-on-testnet) ·
-[30/30 live API checks](#reference), including a real order placed and cancelled · 210 tests, run by
-[CI](.github/workflows/ci.yaml) on every push · [15 places the API differs from its docs](docs/DISCREPANCIES.md),
-each one handled.
+**Nothing to deploy, nothing escrowed.** Orders rest on SaucerSwap's own order book, the one that trades on
+mainnet, and your tokens stay in your wallet until a fill settles. The template adds what the venue leaves
+to you: onboarding read from the chain, a public record of what you signed, and a check of every fill.
+
+### Proof, one click each
+
+None of these needs a wallet.
+
+| What | Evidence |
+| --- | --- |
+| An order filled, then verified | Order 3504309, BUY 10 SAUCE with a 0.0435 limit: [settlement](https://hashscan.io/testnet/transaction/0xd329c0b88e4e98f1be541255f3a88e8761979aaf0acdf9b91968b5b8465fac76), filled at 0.0434055 for a fee of 1,999.7 pips under a 2,000 cap. All four fill checks pass |
+| Orders placed and cancelled | Orders 3494124 and 3504259 on book 3, `ACTIVE` → `CANCELED` in about a second. With a key, `yarn clob:doctor --place` repeats it on demand |
+| The signed-intent journal | [Topic `0.0.10662192`](https://hashscan.io/testnet/topic/0.0.10662192): each order's EIP-712 hash on HCS, written before the order reached the venue |
+| Onboarding, on-chain | [SAUCE→Permit2](https://hashscan.io/testnet/transaction/0x490de469a1d0f08a825a80a79c8c6b12a9ca840939ea6f7239831fdffda37083), [Permit2→settlement](https://hashscan.io/testnet/transaction/0x0e9462293d2374b80222f2dba26b6868a538899cb34d5682e5ca49135de2379d), [USDC→Permit2](https://hashscan.io/testnet/transaction/0xdfa33dfdba54534f33d37987224a4ad6d89b9db4f1e1a729c99e2148f031a512), [Permit2→settlement](https://hashscan.io/testnet/transaction/0x488f4b370b19eaf740be8f7293cf35cd06f38bd0ccb4ca3a52f0d815f6d8c994), and native HBAR's [`hbarApprove` through HIP-906](https://hashscan.io/testnet/transaction/0x53182bbafe0737b9ae7014f461ece4caecb987e58843cbcccab923053152d111), sent to the account's own address |
+| Checked continuously | [Fresh scaffold](https://github.com/OrderForge/scaffold-hbar-limit-orders/actions/workflows/fresh-scaffold.yaml) on every push: `npm create scaffold-hbar` from GitHub, then lint, tests, build and six routes answering 200. [API doctor](https://github.com/OrderForge/scaffold-hbar-limit-orders/actions/workflows/doctor.yaml) daily: 19 checks that SaucerSwap's API still behaves as the code expects |
+| The live demo | [Mainnet and testnet order books](https://scaffold-hbar-limit-orders.vercel.app/markets), read with no wallet |
+
+Behind them: 210 tests, run by [CI](.github/workflows/ci.yaml) on every push, and
+[15 places the API differs from its docs](docs/DISCREPANCIES.md), each one handled.
+
+### Hedera services, and what each does here
+
+| Service | Its job in this template |
+| --- | --- |
+| **Token Service** | A token must be associated with an account before it can be held or settled. The checklist reads that from the mirror node and associates what is missing |
+| **Smart contracts** | Approvals to Permit2 and SaucerSwap's settlement contract, which moves funds at each fill. Native HBAR uses an HBAR allowance through HIP-906 |
+| **Consensus Service** | The intent journal: every signed order's EIP-712 hash, with a consensus timestamp, recorded before submission |
+| **Mirror node** | The source of truth for associations, allowances and settlement logs, so fills are checked against the chain, not the venue's word |
+| **SaucerSwap V3 order book** | The venue: market data, sign-in, building, submitting and cancelling orders. [docs/hedera.md](docs/hedera.md) has the full trust boundary |
 
 **Live demo:** [scaffold-hbar-limit-orders.vercel.app](https://scaffold-hbar-limit-orders.vercel.app). It reads
 both networks and trades on testnet only. Mainnet is read-only there, and the HCS journal is off, so
@@ -321,16 +348,6 @@ yarn clob:status                     # verifies all of the above, says what is l
 Then open a market page: the **ready-to-trade** checklist shows the six on-chain steps, each with a
 HashScan link, and **sign an intent (dry run)** signs an order in your wallet and writes it to the
 journal without sending it anywhere.
-
-### Verified live on testnet
-
-| What | Evidence |
-| --- | --- |
-| HCS journal topic | [`0.0.10662192`](https://hashscan.io/testnet/topic/0.0.10662192) |
-| Permit2 onboarding (4 transactions) | [SAUCE→Permit2](https://hashscan.io/testnet/transaction/0x490de469a1d0f08a825a80a79c8c6b12a9ca840939ea6f7239831fdffda37083), [Permit2→reactor](https://hashscan.io/testnet/transaction/0x0e9462293d2374b80222f2dba26b6868a538899cb34d5682e5ca49135de2379d), [USDC→Permit2](https://hashscan.io/testnet/transaction/0xdfa33dfdba54534f33d37987224a4ad6d89b9db4f1e1a729c99e2148f031a512), [Permit2→reactor](https://hashscan.io/testnet/transaction/0x488f4b370b19eaf740be8f7293cf35cd06f38bd0ccb4ca3a52f0d815f6d8c994) |
-| Order placed and cancelled | orders 3494124 (2026-09-19) and 3504259 (2026-09-30) on book 3: `ACTIVE` → `CANCELED` in about a second |
-| Order filled, then verified | order 3504309, BUY 10 SAUCE at 0.0435 — [settlement](https://hashscan.io/testnet/transaction/0xd329c0b88e4e98f1be541255f3a88e8761979aaf0acdf9b91968b5b8465fac76), filled at 0.0434055, fee 1,999.7 pips under a 2,000 cap; all four fill checks pass against the journalled intent |
-| HBAR allowance via HIP-906 | [`hbarApprove` to Permit2](https://hashscan.io/testnet/transaction/0x53182bbafe0737b9ae7014f461ece4caecb987e58843cbcccab923053152d111), sent to the account's own address: allowance 0 → 1 HBAR on the mirror node |
 
 ## Configuration
 
