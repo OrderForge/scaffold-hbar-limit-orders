@@ -339,9 +339,23 @@ deliberately reading the other network marks everything wallet-related read-only
 two agree.
 
 Testnet liquidity is thin. At the time of writing, testnet has one open market (book 3,
-SAUCE/USDC), and it was halted from 2026-09-19 to 2026-09-30 while its settlement service
-was out of HBAR. That is why the mainnet-read mode exists, and why the template renders halted
+SAUCE/USDC). That is why the mainnet-read mode exists, and why the template renders halted
 and empty books as first-class states rather than errors.
+
+### When testnet halts: how we got it back
+
+Book 3 settles through a SaucerSwap settler account, `0.0.6628041`, which pays for every settlement in
+HBAR. When it runs dry, the market halts, and the API only says that it is halted, not why.
+
+That happened while this template was being built. Book 3 was halted from 2026-09-19, which blocked
+every live order test. On 2026-09-30 we asked in SaucerSwap's Discord, and the team explained that the
+settler had run out of HBAR and topped it up. The market reopened that afternoon, and the first real fill
+behind this template's verification settled minutes later. By that evening the settler had spent its
+1,000 HBAR and the market halted again. A second report got it refilled.
+
+So if book 3 shows **HALTED**, the fix is a message, not a code change. Post in SaucerSwap's Discord,
+name the market (book 3, SAUCE/USDC on testnet) and the settler (`0.0.6628041`), and ask whether it needs
+HBAR. Read mainnet in the meantime. Thanks to the SaucerSwap team for helping both times.
 
 ### Optional features
 
@@ -563,7 +577,7 @@ steps appear. The built-in burner wallet always starts in this state.
 **"This market is halted and is not accepting new orders."** The venue has paused the market — on
 testnet, usually because its settlement service ran out of HBAR. The order is refused before you sign;
 if you sign anyway, `/orders/build` succeeds and `/orders/save` answers `400`. Read mainnet in the
-meantime, and ask in SaucerSwap's Discord.
+meantime, and ask in SaucerSwap's Discord: see [When testnet halts](#when-testnet-halts-how-we-got-it-back).
 
 **"Price must be a multiple of the tick size…" / "Size must be a whole number of lots…"** Every market
 has a price grid and a size grid, and the ticket names the nearest allowed value. Lot and minimum

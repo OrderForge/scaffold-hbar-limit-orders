@@ -10,8 +10,9 @@ About an hour, end to end. Chapters 0 and 1 take five minutes and need nothing a
 > **Testnet is sometimes halted.** SaucerSwap's testnet market (book 3, SAUCE/USDC) stops
 > accepting orders when its settlement service runs low on HBAR. The template says so on
 > the market page. Chapters 0–4 work regardless; for 5 and 6, check that the market shows
-> **OPEN**, and if it does not, ask in SaucerSwap's Discord — that is how it was reopened
-> the last time.
+> **OPEN**. If it does not, post in SaucerSwap's Discord and ask whether the settler,
+> `0.0.6628041`, needs HBAR. That is how it was reopened, twice, while this template was
+> built: see [When testnet halts](../README.md#when-testnet-halts-how-we-got-it-back).
 
 | Chapter | You will | Needs |
 | --- | --- | --- |
